@@ -434,6 +434,28 @@ footer{background:#000;color:var(--gold);text-align:center;padding:18px;font-fam
 .disc-about{border-top:1px solid #eee;padding-top:12px}.disc-about dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:15px}.disc-about dt{font-weight:700}.disc-about dd{margin:0}
 .disc-btns{display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}.disc-btns .btn{width:auto;font-size:16px;padding:10px 22px}
 @media(max-width:700px){.disc-modal{padding:18px}}
+.disc-modal.wide{max-width:820px}.disc-modal h3.dh{font:700 17px var(--serif);margin:16px 0 6px}.disc-modal .sc-info{margin:0 0 6px}
+.disc-modal .ins-table td,.disc-modal .ins-table th{font-size:14px}
+.sc-click{cursor:pointer}.sc-click:hover{background:#faf3e0}.sc-click:focus-visible{outline:3px solid var(--gold);outline-offset:1px}
+.pre-wrap{white-space:pre-wrap}
+.act-own{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding-top:8px;margin-top:4px;border-top:1px dashed #e5dfd5;font-size:14px}
+.act-own label{display:flex;align-items:center;gap:6px;font-weight:700;color:#444}
+.act-own select,.act-own input[type=date]{height:38px;border:1px solid #d6d1c8;border-radius:9px;background:#faf9f6;padding:0 10px;font:inherit;max-width:100%}
+.act-own .btn{width:auto;min-height:38px;padding:6px 16px;font-size:15px}
+.act-chip{padding:3px 11px;border-radius:999px;font-size:13px;font-weight:700;background:#eee;color:#444;white-space:nowrap}
+.act-chip.stage{background:#e9eef6;color:#2f4f7a}.act-chip.ok{background:#dff2e5;color:#1f7a3d}.act-chip.soon{background:#fbf2c4;color:#7a6200}.act-chip.late{background:#fbe3e6;color:#9d0c24}
+.overdue-alert{border-left-color:#b3261e;padding:0}.overdue-btn{display:flex;align-items:center;gap:12px;flex-wrap:wrap;width:100%;padding:16px 22px;border:0;background:none;border-radius:20px;font:inherit;text-align:left;cursor:pointer}
+.overdue-btn b{font:700 20px var(--serif);color:#9d0c24}.overdue-btn small{flex:1;font-size:14px;color:#555}.overdue-btn .chev{font-size:24px;color:#9d0c24}
+.corr{grid-column:1/-1;border:2px solid #e8820c;background:#fff8ec;border-radius:12px;padding:12px 14px;margin-top:6px}
+.corr.done{border-color:#1f7a3d;background:#eef8f1}.corr h4{margin:0 0 8px;font:700 16px var(--serif);color:#a35a00}.corr.done h4{color:#1f7a3d}
+.corr .frm{margin-bottom:8px}.corr p{margin:3px 0;font-size:14px}.corr .btn{width:auto;min-height:40px;padding:8px 18px;font-size:15px}
+.cm-block{margin:0 0 12px}.cm-block h4{margin:0 0 4px;font:700 15px var(--serif)}.cm-block ul{margin:0;padding-left:20px}.cm-block li,.cm-block p{font-size:15px;line-height:1.45;margin:2px 0}
+.cm-delta{display:inline-block;margin:0 6px 6px 0;padding:3px 11px;border-radius:999px;font-size:13px;font-weight:700}.cm-delta.up{background:#dff2e5;color:#1f7a3d}.cm-delta.down{background:#fbe3e6;color:#9d0c24}
+.cm-result{margin:2px 0 8px 20px;font-size:14px;font-weight:700;color:#444}
+.cm-entry{padding:10px 14px;margin:8px 0;border-left:5px solid var(--gold);border-radius:10px;background:#faf9f6}
+.rk-top td{background:#eef8f1}.rk-low td{background:#fdf1f1}
+.aud-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end}
+@media print{.act-own,.overdue-alert{display:none!important}}
 .script{display:flex;justify-content:center;align-items:center;margin-top:24px}
 .script img{display:block;width:clamp(120px,22vw,190px);max-height:104px;object-fit:contain}
 #login .script img{width:clamp(180px,33vw,285px);max-height:156px}
@@ -546,6 +568,7 @@ const DASHBOARD_ACCESS=[
  ['dash_entries','entries','View Entries','Review submitted walkthroughs, checklists, and temperature logs.','ops'],
  ['dash_actions','actions','Action Center','Review and update action items created from walkthroughs.','ops'],
  ['dash_insights','insights','Operational Insights','Review recurring issues, trends, and improvement opportunities.','ops'],
+ ['dash_commentary','commentary','Manager Commentary','Add and edit scorecard commentary and business review notes.','rep'],
  ['dash_scorecard','scorecard','Performance Scorecard','Generate a printable restaurant performance business review.','ops'],
  ['dash_mvr','mvr','Management Visits','Complete and review Management Visitation Reports.','ops']
 ];
@@ -783,7 +806,7 @@ function drawEntriesPage(user,dateKey,storeId,record){
     categories=S.temperatureDefinitions[record.module]||[];
    if(categories.length){
     categories.forEach(category=>{
-     const tasks=(category.items||[]).map(item=>{const warn=tempFlag(item.text,readings[item.id]);return h('div',{class:'entry-detail-item'},h('strong',{text:item.text+': '+(readings[item.id]!==undefined?readings[item.id]+'°F':'Not recorded')}),warn?h('small',{class:'temp-flag',text:warn}):null)});
+     const tasks=(category.items||[]).map(item=>{const warn=tempFlag(item.text,readings[item.id]);return h('div',{class:'entry-detail-item'},h('strong',{text:item.text+': '+(readings[item.id]!==undefined?readings[item.id]+'°F':'Not recorded')}),warn?h('small',{class:'temp-flag',text:warn}):null,tempCorrectionSummary(record.status,record.module,item.id))});
      body.push(panel(category.name,tasks.length?tasks:empty('No items in this category.')))
     })
    }else body.push(empty('No temperature log items were configured when this log was submitted.'))
@@ -967,7 +990,8 @@ function drawActionItems(user){
     return h('div',{class:'walk-task-row action-row '+levelKey+(value==='Done'?' done':'')},
      h('div',{class:'walk-task-main'+(value==='Done'?' done':'')},h('span',null,h('b',{text:action.description}),h('small',{text:' '+action.title+' · '+action.category+' · '+action.date}))),
      h('span',{class:'priority-status '+levelKey,text:level[0]+' '+level[1]}),
-     h('div',{class:'action-quick'},value==='Open'?move('In Progress','Start'):null,value!=='Done'?move('Done','Done'):move('Open','Reopen'),select))
+     h('div',{class:'action-quick'},value==='Open'?move('In Progress','Start'):null,value!=='Done'?move('Done','Done'):move('Open','Reopen'),select),
+     actionExtras(action,user))
    }):[empty('No '+label.toLowerCase()+' action items.')];
    if(value==='Done'&&actions.length)return h('details',{class:'panel action-done'},h('summary',{text:label+' ('+actions.length+')'}),rows);
    return panel(label+' ('+actions.length+')',rows)
@@ -1157,16 +1181,17 @@ function openDashboardOption(module){
       const previous=readings[item.id],value=event.target.value.trim();
       if(value===''||!Number.isFinite(Number(value)))delete readings[item.id];
       else readings[item.id]=value;
-      flag.textContent=tempFlag(item.text,readings[item.id]);input.classList.toggle('temp-warn',!!flag.textContent);
+      flag.textContent=tempFlag(item.text,readings[item.id]);input.classList.toggle('temp-warn',!!flag.textContent);corrective.refresh();
       if(!save()){
        if(previous===undefined)delete readings[item.id];else readings[item.id]=previous;
        event.target.value=previous!==undefined?previous:'';
        t('Unable to save temperature updates. Browser storage may be full.')
       }
      }}),
-      flag=h('small',{class:'temp-flag',text:tempFlag(item.text,readings[item.id])});
+      flag=h('small',{class:'temp-flag',text:tempFlag(item.text,readings[item.id])}),
+      corrective=tempCorrectionBox(module,item,status,()=>readings[item.id]);
      if(flag.textContent)input.classList.add('temp-warn');
-     return h('div',{class:'frm walk-item-row'},field(item.text,input),flag)
+     return h('div',{class:'frm walk-item-row'},field(item.text,input),flag,corrective.element)
     }):empty('No items in this category yet. Add items in the Admin Portal.'))):
     [empty('No temperature log items yet. Ask an administrator to add them.')];
   content.push(dailySubmissionPanel(module,user,'Temperature Log'));
@@ -1569,7 +1594,7 @@ function defaultRolePermissions(role){
  const on=role==='System Administrator'?all:
   role==='Operations Director'?all.filter(k=>k!=='admin'):
   ['Regional Director','Area Representative'].includes(role)?['ops','rep'].concat(dashboard.filter(k=>k!=='dash_users')):
-  ['ops'].concat(dashboard.filter(k=>!['dash_users','dash_actions','dash_insights','dash_mvr'].includes(k)||k==='dash_actions'&&role==='Restaurant Manager'||k==='dash_insights'&&['Restaurant Manager','Assistant Manager'].includes(role)||k==='dash_mvr'&&role==='Restaurant Manager'));
+  ['ops'].concat(dashboard.filter(k=>!['dash_users','dash_actions','dash_insights','dash_mvr','dash_commentary'].includes(k)||k==='dash_commentary'&&role==='Restaurant Manager'||k==='dash_actions'&&role==='Restaurant Manager'||k==='dash_insights'&&['Restaurant Manager','Assistant Manager'].includes(role)||k==='dash_mvr'&&role==='Restaurant Manager'));
  all.forEach(k=>{perms[k]=on.includes(k)});
  return perms
 }
@@ -2198,7 +2223,7 @@ function drawMvrList(user){
 function drawMvrForm(user,visit){
  const stores=dailyLocationsForUser(user),back=()=>drawMvrList(user);
  if(!stores.length){$('mc').replaceChildren(panel(null,empty('No restaurants are available for your account.'),h('div',{class:'btns left'},h('button',{class:'btn alt sm2',type:'button',text:'Back to Visits',onclick:back}))));return}
- const ratings=Object.assign({},visit&&visit.ratings),comments=Object.assign({},visit&&visit.comments),findings=Object.assign({},visit&&visit.findings),
+ const ratings=Object.assign({},visit&&visit.ratings),comments=Object.assign({},visit&&visit.comments),findings=Object.assign({},visit&&visit.findings),commentary=Object.assign({},visit&&visit.commentary),
   initialStore=visit&&stores.some(store=>store.id===visit.locationId)?visit.locationId:(selectedDailyLocation(user)||stores[0]).id,
   dateInput=h('input',{type:'date',value:visit?visit.date:todayDateKey(),'aria-label':'Visit date'}),
   storeSelect=h('select',{'aria-label':'Restaurant'},stores.map(store=>h('option',{value:store.id,text:mvrStoreLabel(store.id)+' · '+locationPath(store)}))),
@@ -2226,7 +2251,7 @@ function drawMvrForm(user,visit){
    if(status==='Complete'&&MVR_CATEGORIES.some(item=>!ratings[item[0]])){t('Rate every category before submitting.');return}
    const snapshot=visit?JSON.parse(JSON.stringify(visit)):null,record=visit||{id:'mvr-'+nid(),created:Date.now()};
    Object.assign(record,{date:dateInput.value,locationId:storeSelect.value,reviewer:user.name||'',reviewerRole:user.role||'',reviewerId:user.id,
-    ratings:Object.assign({},ratings),comments:Object.assign({},comments),findings:Object.assign({},findings),status,score:status==='Complete'?mvrScore(ratings):0});
+    ratings:Object.assign({},ratings),comments:Object.assign({},comments),findings:Object.assign({},findings),commentary:mvrCommentaryClean(commentary),status,score:status==='Complete'?mvrScore(ratings):0});
    if(!visit)S.mvrVisits.push(record);
    const added=status==='Complete'?generateMvrActions(record):[];
    if(!save()){
@@ -2244,6 +2269,7 @@ function drawMvrForm(user,visit){
   panel('Visit Details',h('div',{class:'frm ins-filters'},field('Visit Date',dateInput),field('Restaurant',storeSelect)),
    h('p',{class:'note',text:'Rate each area from 1 (needs immediate attention) to 5 (excellent). This is a coaching tool, not an audit. Ratings of 1 or 2 create an action item.'}),scoreBox),
   ...MVR_CATEGORIES.map(category),
+  mvrCommentaryPanel(commentary),
   panel(null,h('div',{class:'btns left'},h('button',{class:'btn sm2',type:'button',text:'Submit Visit',onclick:()=>persist('Complete')}),h('button',{class:'btn alt sm2',type:'button',text:'Save Draft',onclick:()=>persist('Draft')}),h('button',{class:'btn alt sm2',type:'button',text:'Cancel',onclick:back})))
  )
 }
@@ -2258,6 +2284,7 @@ function drawMvrDetail(user,visit){
    h('div',{class:'mvr-rate'},[1,2,3,4,5].map(n=>h('span',{class:'mvr-rate-btn static'+(visit.ratings[name]===n?' on':''),text:String(n)}))),
    visit.comments&&visit.comments[name]?h('p',null,h('b',{text:'Comments: '}),visit.comments[name]):null,
    visit.findings&&visit.findings[name]?h('p',null,h('b',{text:'Findings: '}),visit.findings[name]):null)),
+  mvrCommentaryView(visit),
   panel('Action Items Created',actions.length?actions.map(action=>h('div',{class:'ins-row'},h('span',null,h('b',{text:action.description}),h('small',{text:' '+action.category})),h('span',{class:'ins-count',text:action.status==='Done'?'Completed':action.status}))):empty('No action items were needed from this visit.'))
  )
 }
@@ -2452,7 +2479,564 @@ try{
  if(savedUser&&savedUser.on){CURRENT_USER_ID=savedUser.id;setHomeUser(savedUser);show('home')}
  else sessionStorage.removeItem(SESSION_KEY)
 }catch(e){}
-/* ---------- Project disclaimer (additive; available without login) ---------- */
+/* ---------- Accountability extensions (additive; reuse the existing S / save() localStorage pattern) ---------- */
+/* Audit event schema v1 (a future backend can ingest these records unchanged):
+   {id, v, ts (ISO 8601), userId, userName, userRole, type ('entity.verb'), changeType (display label),
+    entityType, entityId, locationId, summary, meta} */
+const AUDIT_SCHEMA_VERSION=1,AUDIT_MAX=2000;
+if(!Array.isArray(S.auditLog))S.auditLog=[];
+if(!Array.isArray(S.commentaries))S.commentaries=[];
+const acUser=()=>items('users').find(account=>account.id===CURRENT_USER_ID)||null;
+const acStore=id=>S.locations.some(location=>location.id===id)?mvrStoreLabel(id):'Unknown store';
+const acFmtDate=ms=>new Date(ms).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+const acFmtTime=ms=>new Date(ms).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+function acTable(headers,rows){
+ return h('div',{class:'ins-table-wrap'},h('table',{class:'ins-table'},h('thead',null,h('tr',null,headers.map(text=>h('th',{text})))),h('tbody',null,rows.map(cells=>h('tr',null,cells.map(cell=>h('td',null,cell)))))))
+}
+function shModal(title,nodes){
+ const opener=document.activeElement,
+  close=()=>{back.remove();document.removeEventListener('keydown',onKey);if(opener&&opener.isConnected&&opener.focus)opener.focus()},
+  onKey=event=>{if(event.key==='Escape'){event.stopImmediatePropagation();close()}},
+  closeBtn=h('button',{class:'btn',type:'button',text:'Close',onclick:close}),
+  back=h('div',{class:'disc-back',onclick:event=>{if(event.target===back)close()}},
+   h('div',{class:'disc-modal wide',role:'dialog','aria-modal':'true','aria-label':title},h('h2',{text:title}),nodes,h('div',{class:'disc-btns'},closeBtn)));
+ document.body.append(back);document.addEventListener('keydown',onKey,true);closeBtn.focus()
+}
+
+/* ----- Audit trail: derives events by comparing a lightweight snapshot on every save() ----- */
+function acUserFp(user){const copy=Object.assign({},user);delete copy.last;return JSON.stringify(copy)}
+function auditSnapshot(){
+ const snap={actions:{},users:{},visits:{},done:{},fixes:{},notes:{}},
+  trackable=DASHBOARD_ACCESS.filter(option=>/^(walk_|check_|temp_)/.test(option[1])||option[1]==='food_order');
+ S.actionItems.forEach(a=>{snap.actions[a.id]=JSON.stringify([a.status,a.ownerId||'',a.dueDate||'',a.verified&&a.verified.at||0])});
+ items('users').forEach(u=>{snap.users[u.id]=acUserFp(u)});
+ S.mvrVisits.forEach(v=>{snap.visits[v.id]=v.status});
+ Object.keys(S.dailyStatus||{}).forEach(key=>{
+  const st=S.dailyStatus[key]||{};
+  trackable.forEach(option=>{if(dailyOptionComplete(option,st))snap.done[key+'|'+option[1]]=1});
+  if(st.temperatureCorrections)snap.fixes[key]=JSON.stringify(st.temperatureCorrections)
+ });
+ S.commentaries.forEach(c=>{snap.notes[c.id]=c.updated||c.created});
+ return snap
+}
+function auditDiff(prev,next,user){
+ const events=[],
+  add=(type,changeType,entityType,entityId,locationId,summary,meta)=>events.push({id:'aud-'+Date.now().toString(36)+Math.random().toString(36).slice(2,8),v:AUDIT_SCHEMA_VERSION,ts:new Date().toISOString(),userId:user.id,userName:user.name||'',userRole:user.role||'',type,changeType,entityType,entityId:String(entityId),locationId:locationId||'',summary,meta:meta||{}}),
+  byId=new Map(S.actionItems.map(a=>[a.id,a])),
+  describe=a=>(a.description||a.title||'Action')+' · '+acStore(a.locationId);
+ const created=Object.keys(next.actions).filter(id=>!(id in prev.actions));
+ if(created.length>3)add('action.created','Created Actions','action',created[0],'',created.length+' actions created',{ids:created.slice(0,50),count:created.length});
+ else created.forEach(id=>{const a=byId.get(id);add('action.created','Created Action','action',id,a.locationId,describe(a),{priority:a.level})});
+ Object.keys(next.actions).forEach(id=>{
+  if(!(id in prev.actions)||prev.actions[id]===next.actions[id])return;
+  const a=byId.get(id),[oldStatus,oldOwner,oldDue,oldVerified]=JSON.parse(prev.actions[id]),[status,owner,due,verified]=JSON.parse(next.actions[id]);
+  if(status!==oldStatus)add(status==='Done'?'action.completed':status==='In Progress'?'action.started':'action.reopened',status==='Done'?'Completed Action':status==='In Progress'?'Started Action':'Reopened Action','action',id,a.locationId,describe(a),{from:oldStatus,to:status});
+  if(owner!==oldOwner)add('action.assigned','Assigned Action','action',id,a.locationId,describe(a)+' → '+(a.ownerName||'Unassigned'),{ownerId:owner});
+  if(due!==oldDue)add('action.due_date_changed','Changed Action Due Date','action',id,a.locationId,describe(a)+' → '+(due||'default'),{dueDate:due});
+  if(verified!==oldVerified)add(verified?'action.verified':'action.verification_removed',verified?'Verified Action':'Removed Action Verification','action',id,a.locationId,describe(a),{})
+ });
+ Object.keys(next.users).forEach(id=>{
+  const u=items('users').find(x=>String(x.id)===String(id));
+  if(!(id in prev.users))add('user.created','Created User','user',id,u.locationId,u.name+' ('+u.role+')',{});
+  else if(prev.users[id]!==next.users[id]){
+   const before=JSON.parse(prev.users[id]),after=JSON.parse(next.users[id]),
+    fields=[...new Set(Object.keys(before).concat(Object.keys(after)))].filter(k=>JSON.stringify(before[k])!==JSON.stringify(after[k])).map(k=>k==='passwordHash'?'password':k==='resetCode'?'password reset code':k);
+   add('user.modified','Modified User','user',id,u.locationId,u.name+' — changed: '+fields.join(', '),{fields})
+  }
+ });
+ Object.keys(prev.users).forEach(id=>{if(!(id in next.users))add('user.removed','Removed User','user',id,'','User record removed',{})});
+ Object.keys(next.visits).forEach(id=>{
+  const v=S.mvrVisits.find(x=>x.id===id);
+  if(next.visits[id]==='Complete'&&prev.visits[id]!=='Complete')add('mvr.completed','Completed MVR','mvr',id,v.locationId,acStore(v.locationId)+' · '+v.date+' · '+v.score+'%',{score:v.score});
+  else if(!(id in prev.visits)&&next.visits[id]!=='Complete')add('mvr.draft_saved','Saved MVR Draft','mvr',id,v.locationId,acStore(v.locationId)+' · '+v.date,{})
+ });
+ Object.keys(next.done).filter(key=>!(key in prev.done)).forEach(key=>{
+  const [day,loc,module]=key.split('|'),option=DASHBOARD_ACCESS.find(o=>o[1]===module),name=option?option[2]:module,
+   kind=module.indexOf('walk_')===0?['walkthrough','Completed Walkthrough']:module.indexOf('check_')===0?['checklist','Completed Checklist']:module.indexOf('temp_')===0?['temperature_log','Completed Temperature Log']:['food_order','Submitted Food Order'];
+  add(kind[0]+'.completed',kind[1],kind[0],key,loc,name+' · '+acStore(loc)+' · '+day,{module,date:day})
+ });
+ Object.keys(next.fixes).forEach(key=>{
+  if(next.fixes[key]===prev.fixes[key])return;
+  const before=prev.fixes[key]?JSON.parse(prev.fixes[key]):{},after=JSON.parse(next.fixes[key]),[day,loc]=key.split('|');
+  Object.keys(after).forEach(module=>Object.keys(after[module]).forEach(itemId=>{
+   const rec=after[module][itemId];
+   if(JSON.stringify(rec)!==JSON.stringify((before[module]||{})[itemId]))add('temperature.corrective_action','Recorded Temperature Corrective Action','temperature_log',key+'|'+itemId,loc,(rec.product||'Product')+' · '+rec.tempRecorded+'°F · '+rec.action,{date:day})
+  }))
+ });
+ Object.keys(next.notes).forEach(id=>{
+  if(next.notes[id]===prev.notes[id])return;
+  const c=S.commentaries.find(x=>x.id===id);
+  add(id in prev.notes?'commentary.updated':'commentary.created',id in prev.notes?'Updated Manager Commentary':'Created Manager Commentary','commentary',id,c.locationId,acStore(c.locationId)+' · '+c.from+' to '+c.to,{})
+ });
+ return events
+}
+let acSnap=auditSnapshot();
+const acBaseSave=save;
+save=function(){
+ const user=acUser(),next=auditSnapshot();
+ let events=[];
+ if(user){try{events=auditDiff(acSnap,next,user)}catch(error){console.error('Audit capture failed:',error)}}
+ if(events.length){S.auditLog.push(...events);if(S.auditLog.length>AUDIT_MAX)S.auditLog.splice(0,S.auditLog.length-AUDIT_MAX)}
+ const ok=acBaseSave();
+ if(ok)acSnap=next;
+ else if(events.length)S.auditLog=S.auditLog.filter(event=>!events.includes(event));
+ return ok
+};
+
+/* ----- Action ownership, due dates and escalation ----- */
+const AC_SLA={critical:1,high:3,medium:7},ACTION_STAGES=['Open','Assigned','In Progress','Completed','Verified'];
+const acDayNum=key=>{const [y,m,d]=key.split('-').map(Number);return Date.UTC(y,m-1,d)/864e5};
+const acAddDays=(key,n)=>{const d=insightsParse(key);d.setDate(d.getDate()+n);return insightsKey(d)};
+function actionDue(a){
+ if(/^\d{4}-\d{2}-\d{2}$/.test(a.dueDate||''))return {date:a.dueDate,custom:true};
+ const base=/^\d{4}-\d{2}-\d{2}$/.test(a.date||'')?a.date:insightsKey(new Date(a.created||Date.now()));
+ return {date:acAddDays(base,AC_SLA[a.level]!==undefined?AC_SLA[a.level]:AC_SLA.medium),custom:false}
+}
+function actionTiming(a){
+ if(a.status==='Done')return null;
+ const due=actionDue(a),left=acDayNum(due.date)-acDayNum(todayDateKey());
+ return {due:due.date,custom:due.custom,left,state:left<0?'late':left<=2?'soon':'ok'}
+}
+const actionVerified=a=>!!(a.status==='Done'&&a.verified&&a.verified.at>=(a.completed||0));
+function actionStage(a){
+ if(a.status==='Done')return actionVerified(a)?'Verified':'Completed';
+ return a.status==='In Progress'?'In Progress':a.ownerId?'Assigned':'Open'
+}
+function actionExtras(action,user){
+ const stage=actionStage(action),timing=actionTiming(action),canManage=hasDashboardPermission(user,'actions'),
+  update=mutate=>{
+   const keys=['ownerId','ownerName','assignedAt','dueDate','verified'],snap={};
+   keys.forEach(key=>{snap[key]=action[key]});
+   mutate();
+   if(!save()){keys.forEach(key=>{if(snap[key]===undefined)delete action[key];else action[key]=snap[key]});t('Unable to update the action item. Browser storage may be full.');return}
+   renderPriorityPanel(user);drawActionItems(user)
+  },
+  chips=[h('span',{class:'act-chip stage',text:stage})];
+ if(timing){
+  const text=timing.left<0?'⚠ Overdue by '+(-timing.left)+' day'+(timing.left===-1?'':'s'):timing.left===0?'Due today':timing.left+' day'+(timing.left===1?'':'s')+' left';
+  chips.push(h('span',{class:'act-chip '+timing.state,text:'Due '+scDate(timing.due)+(timing.custom?'':' (default)')+' · '+text}));
+  if(timing.left<=-3)chips.push(h('span',{class:'act-chip late',text:'Escalate to leadership'}))
+ }
+ if(!canManage){
+  chips.push(h('span',{text:'Owner: '+(action.ownerName||'Unassigned')}));
+  return h('div',{class:'act-own'},chips)
+ }
+ const people=items('users').filter(u=>u.on&&dailyLocationsForUser(u).some(store=>store.id===action.locationId)),
+  ownerSelect=h('select',{'aria-label':'Owner for '+action.description},h('option',{value:'',text:'Unassigned'}),
+   people.map(u=>h('option',{value:String(u.id),text:(u.name||'User')+' · '+u.role}))),
+  dueInput=h('input',{type:'date',value:actionDue(action).date,'aria-label':'Due date for '+action.description});
+ if(action.ownerId&&!people.some(u=>String(u.id)===String(action.ownerId)))ownerSelect.append(h('option',{value:String(action.ownerId),text:action.ownerName||'Previous owner'}));
+ ownerSelect.value=action.ownerId?String(action.ownerId):'';
+ ownerSelect.onchange=()=>{
+  const owner=items('users').find(u=>String(u.id)===ownerSelect.value);
+  update(()=>{if(owner){action.ownerId=owner.id;action.ownerName=owner.name;action.assignedAt=Date.now()}else{delete action.ownerId;delete action.ownerName;delete action.assignedAt}})
+ };
+ dueInput.onchange=()=>update(()=>{if(/^\d{4}-\d{2}-\d{2}$/.test(dueInput.value))action.dueDate=dueInput.value;else delete action.dueDate});
+ const verify=stage==='Completed'?h('button',{class:'btn sm2',type:'button',text:'Verify Completion',onclick:()=>update(()=>{action.verified={by:user.id,byName:user.name,at:Date.now()}})}):null,
+  verified=stage==='Verified'?h('span',{text:'Verified by '+(action.verified.byName||'a manager')+' · '+acFmtDate(action.verified.at)}):null;
+ return h('div',{class:'act-own'},chips,h('label',null,'Owner',ownerSelect),action.status!=='Done'?h('label',null,'Due',dueInput):null,verify,verified)
+}
+function refreshOverdueAlert(user){
+ let box=$('overdueAlert');
+ if(!box){
+  const anchor=$('home').querySelector('.restaurant-status');
+  if(!anchor)return;
+  box=h('section',{id:'overdueAlert',class:'daily-progress overdue-alert hidden','aria-live':'polite'});anchor.before(box)
+ }
+ if(!user||!hasDashboardPermission(user,'actions')){box.classList.add('hidden');return}
+ const location=selectedDailyLocation(user),locationId=location&&location.id||'default',
+  timed=S.actionItems.filter(a=>a.locationId===locationId).map(actionTiming).filter(Boolean),
+  overdue=timed.filter(x=>x.state==='late'),soon=timed.filter(x=>x.state==='soon').length,
+  critical=S.actionItems.filter(a=>a.locationId===locationId&&a.level==='critical'&&(actionTiming(a)||{}).state==='late').length,
+  escalated=overdue.filter(x=>x.left<=-3).length;
+ if(!overdue.length){box.classList.add('hidden');box.replaceChildren();return}
+ box.classList.remove('hidden');
+ box.replaceChildren(h('button',{class:'overdue-btn',type:'button',onclick:()=>openActionItems(user)},
+  h('b',{text:'⚠ '+overdue.length+' Overdue Action'+(overdue.length===1?'':'s')}),
+  h('small',{text:[critical?critical+' critical':'',escalated?escalated+' overdue 3+ days':'',soon?soon+' due soon':''].filter(Boolean).join(' · ')||'Review overdue actions in the Action Center'}),
+  h('span',{class:'chev',text:'›'})))
+}
+const acBaseRenderPriority=renderPriorityPanel;
+renderPriorityPanel=function(user){acBaseRenderPriority(user);try{refreshOverdueAlert(user)}catch(error){console.error('Overdue alert failed:',error)}};
+
+/* ----- Temperature corrective actions (shown only for out-of-range readings) ----- */
+const TEMP_FIX_ACTIONS=['Moved product to functioning cooler','Discarded affected product','Rechecked after 15 minutes','Adjusted equipment settings','Called for equipment service','Other (describe in notes)'];
+const tempFixFor=(status,module,itemId)=>status&&status.temperatureCorrections&&status.temperatureCorrections[module]&&status.temperatureCorrections[module][itemId]||null;
+function tempCorrectionBox(module,item,status,getValue){
+ const wrap=h('div',{class:'corr hidden','aria-live':'polite'}),
+  refresh=()=>{
+   const value=getValue(),flagged=!!tempFlag(item.text,value),record=tempFixFor(status,module,item.id);
+   if(!flagged&&!record){wrap.classList.add('hidden');wrap.replaceChildren();return}
+   wrap.classList.remove('hidden');
+   const current=record&&String(record.tempRecorded)===String(value);
+   wrap.classList.toggle('done',!!record&&(current||!flagged));
+   if(record&&(current||!flagged)){
+    wrap.replaceChildren(h('h4',{text:flagged?'✓ Corrective action recorded':'Corrective action on file (earlier out-of-range reading)'}),summary(record),
+     flagged?h('button',{class:'btn alt',type:'button',text:'Edit Corrective Action',onclick:()=>form(record)}):null);
+    return
+   }
+   form(record)
+  },
+  summary=record=>h('div',null,
+   h('p',null,h('b',{text:'Product: '}),record.product),h('p',null,h('b',{text:'Temperature recorded: '}),record.tempRecorded+'°F'),
+   h('p',null,h('b',{text:'Action taken: '}),record.action),
+   record.followUp!==''&&record.followUp!==undefined?h('p',null,h('b',{text:'Follow-up temperature: '}),record.followUp+'°F'+(tempFlag(item.text,record.followUp)?' — still out of range, escalate':'')):null,
+   record.notes?h('p',{class:'pre-wrap'},h('b',{text:'Notes: '}),record.notes):null,
+   h('p',{class:'note',text:'Recorded by '+(record.by||'—')+' · '+acFmtTime(record.at)})),
+  form=record=>{
+   const value=getValue(),
+    product=h('input',{type:'text',value:record&&record.product||item.text,'aria-label':'Product'}),
+    recorded=h('input',{type:'text',value:value+'°F',readonly:'readonly','aria-label':'Temperature recorded'}),
+    action=sel(TEMP_FIX_ACTIONS,record&&record.action||TEMP_FIX_ACTIONS[0]),
+    followUp=h('input',{type:'number',step:'any',inputmode:'decimal',placeholder:'Follow-up temperature (°F)',value:record&&record.followUp!==undefined?record.followUp:'','aria-label':'Follow-up temperature'}),
+    notes=h('textarea',{class:'walk-task-note','aria-label':'Corrective action notes',placeholder:'Notes…',value:record&&record.notes||''});
+   action.setAttribute('aria-label','Corrective action taken');
+   wrap.classList.remove('done');
+   wrap.replaceChildren(h('h4',{text:'⚠ Corrective Action Required'}),
+    h('div',{class:'frm'},field('Product',product),field('Temperature Recorded',recorded),field('Corrective Action Taken',action),field('Follow-Up Temperature',followUp)),
+    field('Notes',notes),
+    h('div',{class:'btns left'},h('button',{class:'btn',type:'button',text:'Save Corrective Action',onclick:()=>{
+     const user=acUser(),fu=followUp.value.trim();
+     if(!product.value.trim()){t('Enter the product.');return}
+     if(action.value===TEMP_FIX_ACTIONS[TEMP_FIX_ACTIONS.length-1]&&!notes.value.trim()){t('Describe the corrective action in the notes.');return}
+     if(fu!==''&&!Number.isFinite(Number(fu))){t('Enter a valid follow-up temperature.');return}
+     status.temperatureCorrections=status.temperatureCorrections||{};
+     const store=status.temperatureCorrections[module]||(status.temperatureCorrections[module]={}),previous=store[item.id];
+     store[item.id]={product:product.value.trim(),tempRecorded:value,action:action.value,followUp:fu,notes:notes.value.trim(),by:user?user.name:'',byId:user?user.id:null,at:Date.now()};
+     if(!save()){if(previous===undefined)delete store[item.id];else store[item.id]=previous;t('Unable to save the corrective action. Browser storage may be full.');return}
+     t('Corrective action saved.');refresh()
+    }})))
+  };
+ refresh();
+ return {element:wrap,refresh}
+}
+function tempCorrectionSummary(status,module,itemId){
+ const record=tempFixFor(status,module,itemId);
+ if(!record)return null;
+ return h('small',{class:'temp-flag'},'Corrective action: '+record.action+(record.followUp!==''&&record.followUp!==undefined?' · follow-up '+record.followUp+'°F':'')+(record.notes?' — '+record.notes:'')+' ('+(record.by||'—')+')')
+}
+
+/* ----- MVR commentary (optional fields) ----- */
+const MVR_COMMENTARY_FIELDS=[['strengths','Manager Strengths'],['risks','Key Risks'],['focus','Recommended Focus'],['partner','Business Partner Observations']];
+function mvrCommentaryClean(commentary){
+ const out={};
+ MVR_COMMENTARY_FIELDS.forEach(([key])=>{const value=String(commentary&&commentary[key]||'').trim();if(value)out[key]=value});
+ return out
+}
+function mvrCommentaryPanel(commentary){
+ return panel('Business Review Commentary (optional)',h('p',{class:'note',text:'Add context for the business review. These notes are saved with this visit.'}),
+  h('div',{class:'frm'},MVR_COMMENTARY_FIELDS.map(([key,label])=>field(label,h('textarea',{class:'walk-task-note','aria-label':label,placeholder:label+'…',value:commentary[key]||'',oninput:event=>{commentary[key]=event.target.value}})))))
+}
+function mvrCommentaryView(visit){
+ const filled=MVR_COMMENTARY_FIELDS.filter(([key])=>visit.commentary&&visit.commentary[key]);
+ if(!filled.length)return document.createDocumentFragment();
+ return panel('Business Review Commentary',filled.map(([key,label])=>h('div',{class:'cm-block'},h('h4',{text:label}),h('p',{class:'pre-wrap',text:visit.commentary[key]}))))
+}
+
+/* ----- Audit History screen (Administration) ----- */
+let AUD_VIEW={type:'',user:'',q:'',n:50};
+function openAuditHistory(){
+ if(!isSystemAdministrator()){t('System Administrator access is required.');show('home');return}
+ $('et').textContent='Audit History';
+ $('ed').textContent='A local record of who changed what, and when. Events use a fixed schema so a future backend can ingest them unchanged.';
+ drawAuditHistory();show('edit')
+}
+function drawAuditHistory(){
+ const log=S.auditLog.slice().reverse(),
+  types=[...new Set(log.map(e=>e.changeType))].sort(),users=[...new Set(log.map(e=>e.userName).filter(Boolean))].sort(),
+  typeSel=h('select',{'aria-label':'Change type'},h('option',{value:'',text:'All change types'}),types.map(x=>h('option',{value:x,text:x}))),
+  userSel=h('select',{'aria-label':'User'},h('option',{value:'',text:'All users'}),users.map(x=>h('option',{value:x,text:x}))),
+  search=h('input',{type:'search',placeholder:'Search records…','aria-label':'Search audit history',value:AUD_VIEW.q});
+ typeSel.value=AUD_VIEW.type;userSel.value=AUD_VIEW.user;
+ const apply=()=>{AUD_VIEW={type:typeSel.value,user:userSel.value,q:search.value,n:50};drawAuditHistory()},
+  q=AUD_VIEW.q.trim().toLowerCase(),
+  rows=log.filter(e=>(!AUD_VIEW.type||e.changeType===AUD_VIEW.type)&&(!AUD_VIEW.user||e.userName===AUD_VIEW.user)&&(!q||(e.summary+' '+e.changeType+' '+e.userName).toLowerCase().includes(q))),
+  exportLog=()=>{
+   const url=URL.createObjectURL(new Blob([JSON.stringify({schemaVersion:AUDIT_SCHEMA_VERSION,exported:new Date().toISOString(),events:S.auditLog},null,2)],{type:'application/json'})),
+    link=h('a',{href:url,download:'shift-hero-audit-log.json'});
+   document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)
+  };
+ $('ec').replaceChildren(
+  panel(null,h('div',{class:'aud-filters'},field('Change Type',typeSel),field('User',userSel),field('Search',search),
+   h('div',{class:'btns left'},h('button',{class:'btn sm2',type:'button',text:'Apply Filter',onclick:apply}),h('button',{class:'btn alt sm2',type:'button',text:'Export JSON',onclick:exportLog})))),
+  panel('Audit Events ('+rows.length+')',rows.length?[acTable(['When','User','Change','Record','Store'],rows.slice(0,AUD_VIEW.n).map(e=>[acFmtTime(Date.parse(e.ts)),e.userName||'—',e.changeType,e.summary,e.locationId?acStore(e.locationId):'—'])),
+   rows.length>AUD_VIEW.n?h('div',{class:'btns left'},h('button',{class:'btn alt',type:'button',text:'Show more',onclick:()=>{AUD_VIEW.n+=50;drawAuditHistory()}})):null,
+   h('p',{class:'note',text:'The most recent '+AUDIT_MAX+' events are kept in this browser.'})]:empty('No audit events match. Events are recorded as users create actions, complete walkthroughs and MVRs, and modify users.')))
+}
+const acBaseRenderAdmin=renderAdmin;
+renderAdmin=function(){
+ acBaseRenderAdmin();
+ const g=$('ag');
+ if(g&&isSystemAdministrator())g.append(panel('Administration',h('div',{class:'grid'},h('button',{class:'tile',onclick:openAuditHistory},
+  h('span',{class:'ico'},ico('shield')),h('span',{class:'lbl'},'Audit History',h('small',{text:'Review who changed what and when'})),h('span',{class:'chev',text:'›'})))))
+};
+
+/* ----- Manager commentary ----- */
+const CM_FIELDS=[['successes','Successes This Period'],['challenges','Challenges This Period'],['focus','Focus Areas Next Period'],['notes','Additional Notes']];
+const CM_METRICS=[[/readiness|ready/,'ready','Readiness'],[/walk/,'walk','Walkthrough Completion'],[/checklist/,'check','Checklist Completion'],[/temp/,'temp','Temperature Compliance'],[/action|overdue/,'action','Action Closure Rate'],[/mvr|visit/,'mvr','MVR Score'],[/overall|score/,'score','Overall Score']];
+const CM_STOP=new Set(['compliance','standards','findings','finding','improve','reduce','review','increase','process','above','below','next','period','focus','team','keep','maintain']);
+const cmLines=text=>String(text||'').split(/\r?\n/).map(s=>s.replace(/^\s*[-•*]\s*/,'').trim()).filter(Boolean);
+const cmTokens=text=>new Set((String(text).toLowerCase().match(/[a-z]{4,}/g)||[]).filter(w=>!CM_STOP.has(w)));
+function cmBlock(label,text){
+ const lines=cmLines(text);
+ return h('div',{class:'cm-block'},h('h4',{text:label}),lines.length?h('ul',null,lines.map(line=>h('li',{text:line}))):h('p',{class:'note',text:'—'}))
+}
+function cmSnapshot(m){
+ const map=new Map();
+ m.findings.forEach(f=>{const key=f.category+'\u0001'+f.name;map.set(key,(map.get(key)||0)+1)});
+ const rounded=v=>v==null?null:Math.round(v);
+ return {score:m.score,walk:rounded(m.walk),check:rounded(m.check),temp:rounded(m.temp),action:rounded(m.action),ready:rounded(m.ready),mvr:rounded(m.mvr),
+  findings:[...map.entries()].sort((a,b)=>b[1]-a[1]).slice(0,80).map(([key,count])=>({category:key.split('\u0001')[0],name:key.split('\u0001')[1],count}))}
+}
+function cmEvaluate(line,baseline,cur){
+ const results=[],lower=line.toLowerCase(),words=cmTokens(line);
+ CM_METRICS.forEach(([re,key,label])=>{
+  if(re.test(lower)&&baseline[key]!=null&&cur[key]!=null){
+   const now=Math.round(cur[key]),d=now-baseline[key];
+   results.push(label+': '+baseline[key]+'% → '+now+'% ('+scSigned(d)+')')
+  }
+ });
+ const curMap=new Map();
+ cur.findings.forEach(f=>{const key=f.category+'\u0001'+f.name;curMap.set(key,(curMap.get(key)||0)+1)});
+ const related=(category,name)=>[...cmTokens(category+' '+name)].some(w=>words.has(w)),
+  before=baseline.findings.filter(f=>related(f.category,f.name)).reduce((s,f)=>s+f.count,0),
+  after=[...curMap.entries()].filter(([key])=>related(...key.split('\u0001'))).reduce((s,[,n])=>s+n,0);
+ if(before+after>0){
+  const pct=before?Math.round((after-before)/before*100):null;
+  results.push('Related findings: '+before+' → '+after+(pct==null?'':pct<0?' (Reduced '+(-pct)+'%)':pct>0?' (Increased '+pct+'%)':' (No change)'))
+ }
+ return results
+}
+const cmFor=(locationId,from,to)=>S.commentaries.find(c=>c.locationId===locationId&&c.from===from&&c.to===to)||null;
+function cmSave(ctx,values,existing){
+ const user=acUser(),now=Date.now(),
+  visit=S.mvrVisits.filter(v=>v.status==='Complete'&&v.locationId===ctx.single.id&&v.date>=ctx.days[0]&&v.date<=ctx.days[ctx.days.length-1]).sort((a,b)=>b.date.localeCompare(a.date)||b.created-a.created)[0];
+ if(existing){
+  const backup=JSON.stringify(existing);
+  existing.revisions=(existing.revisions||[]).concat({at:existing.updated||existing.created,byId:existing.editorId||existing.authorId,byName:existing.editorName||existing.authorName,successes:existing.successes,challenges:existing.challenges,focus:existing.focus,notes:existing.notes}).slice(-20);
+  Object.assign(existing,values,{updated:now,editorId:user.id,editorName:user.name,mvrId:visit?visit.id:'',snapshot:{cur:cmSnapshot(ctx.cur),prev:cmSnapshot(ctx.prev)}});
+  if(!save()){Object.assign(existing,JSON.parse(backup));return false}
+  return true
+ }
+ const record=Object.assign({id:'cm-'+nid(),locationId:ctx.single.id,from:ctx.days[0],to:ctx.days[ctx.days.length-1],created:now,updated:now,
+  authorId:user.id,authorName:user.name,authorRole:user.role,editorId:user.id,editorName:user.name,mvrId:visit?visit.id:'',
+  snapshot:{cur:cmSnapshot(ctx.cur),prev:cmSnapshot(ctx.prev)},revisions:[]},values);
+ S.commentaries.push(record);
+ if(!save()){S.commentaries.pop();return false}
+ return true
+}
+function cmEntry(c,open){
+ const visit=c.mvrId&&S.mvrVisits.find(v=>v.id===c.mvrId);
+ return h('details',open?{class:'cm-entry',open:''}:{class:'cm-entry'},
+  h('summary',null,h('b',{text:acStore(c.locationId)+' · '+scDate(c.from)+' – '+scDate(c.to)}),' · '+(c.editorName||c.authorName||'—')+' · '+acFmtDate(c.updated||c.created)),
+  CM_FIELDS.map(([key,label])=>cmBlock(label,c[key])),
+  visit?h('p',{class:'note',text:'Linked MVR: '+mvrDate(visit.date)+' · '+visit.score+'%'}):null,
+  (c.revisions||[]).length?h('p',{class:'note',text:(c.revisions.length)+' earlier revision'+(c.revisions.length===1?'':'s')+' saved.'}):null)
+}
+function scCtx(user){
+ const f=SC_FILTER;
+ if(!f.ready)return null;
+ const stores=dailyLocationsForUser(user),days=scDays(f);
+ if(!days||!days.length)return null;
+ const scope=f.store==='all'?stores:stores.filter(s=>s.id===f.store);
+ if(!scope.length)return null;
+ const prevDays=scPrevDays(days);
+ return {user,stores,scope,days,prevDays,cur:scMetrics(scope,days),prev:scMetrics(scope,prevDays),single:scope.length===1?scope[0]:null}
+}
+
+/* ----- Scorecard drill-down ----- */
+const SC_DRILL={'Overall Performance':'overall','Walkthrough Compliance':'walk','Walkthrough Completion':'walk','Checklist Compliance':'check','Checklist Completion':'check',
+ 'Temperature Log Compliance':'temp','Temperature Compliance':'temp','Action Plan Resolution':'action','Actions Created':'action','Actions Closed':'action','Action Closure Rate':'action','Average Resolution Time':'action',
+ 'Readiness Score':'ready','Average Readiness':'ready','MVR Score':'mvr','Average MVR Score':'mvr','Current MVR':'mvr','Previous MVR':'mvr','MVR Trend':'mvr','Open Critical Actions':'critical'};
+function scOpenDrill(label,key,ctx){
+ const {cur,scope,days,single}=ctx,from=days[0],to=days[days.length-1],ids=new Set(scope.map(s=>s.id)),
+  multi=scope.length>1,CAP=60,
+  mods=prefix=>DASHBOARD_ACCESS.filter(o=>o[1].indexOf(prefix)===0),
+  statusOf=(store,day)=>S.dailyStatus&&S.dailyStatus[day+'|'+store.id],
+  capNote=n=>n>CAP?h('p',{class:'note',text:'Showing the first '+CAP+' of '+n+' records.'}):null,
+  actionRow=a=>[scDate(a.date),multi?acStore(a.locationId):null,a.description||a.title||'Action',a.level,actionStage(a),a.ownerName||'—'].filter(x=>x!==null),
+  actionHead=()=>['Date',multi?'Store':null,'Action','Priority','Stage','Owner'].filter(x=>x!==null),
+  actionTable=list=>list.length?[acTable(actionHead(),list.slice(0,CAP).map(actionRow)),capNote(list.length)]:empty('No records.'),
+  periodActions=S.actionItems.filter(a=>ids.has(a.locationId)&&a.date>=from&&a.date<=to),
+  completionRows=prefix=>{
+   const rows=[];
+   scope.forEach(store=>mods(prefix).forEach(option=>{
+    let done=0;days.forEach(day=>{if(dailyOptionComplete(option,statusOf(store,day)||{}))done++});
+    rows.push([multi?acStore(store.id):null,option[2],done+' of '+days.length+' days',Math.round(done/days.length*100)+'%'].filter(x=>x!==null))
+   }));
+   return acTable([multi?'Store':null,'Form','Completed','Rate'].filter(x=>x!==null),rows)
+  },
+  info={
+   walk:['Daily Manager Walkthroughs submitted from the dashboard.','Completed walkthroughs ÷ expected walkthroughs (each walkthrough × each day × each store in the range).',cur.walk],
+   check:['Opening, Mid-Day and Closing Checklists submitted from the dashboard.','Completed checklists ÷ expected checklists (each checklist × each day × each store in the range).',cur.check],
+   temp:['Temperature Logs entered from the dashboard.','In-range readings ÷ all recorded numeric readings, using each item\'s acceptable limits.',cur.temp],
+   action:['Action Center items dated within the range.','Closed actions ÷ actions created in the range. Average resolution time uses created-to-completed time of closed actions.',cur.action],
+   ready:['Open Action Center items on each day a store submitted any daily form.','For each submitted day: 100 minus open-action penalties (Critical 10, High 5, Medium 2), floored at 0. The result is the average of those days. Other figures below are context, not inputs.',cur.ready],
+   mvr:['Completed Management Visit Reviews dated within the range.','Average of overall scores for completed visits in the range. Trend compares the latest visit with the visit before it.',cur.mvr],
+   critical:['Action Center items with Critical priority that are not closed.','Count of unresolved Critical actions dated on or before the end of the range.',null],
+   overall:['The six weighted components of this scorecard.','Weighted average of available components (Walkthrough 20, Checklist 20, Temperature 15, Action Plan 15, Readiness 15, MVR 15). Components with no data are dropped and remaining weights renormalized.',cur.score]
+  }[key],
+  head=acTable(['Detail','Value'],[
+   ['Store',single?mvrStoreLabel(single.id)+' · '+single.name:'All Locations ('+scope.length+' stores)'],['Date Range',scDate(from)+' – '+scDate(to)],
+   ['Result',key==='critical'?String(cur.openCritical):key==='overall'?scPct(cur.score):scPct(info[2])],['Data Source',info[0]],['Calculation',info[1]]]);
+ let records;
+ if(key==='walk')records=completionRows('walk_');
+ else if(key==='check')records=completionRows('check_');
+ else if(key==='temp'){
+  const rows=[];let total=0;
+  scope.forEach(store=>days.forEach(day=>{
+   const status=statusOf(store,day);
+   if(!status)return;
+   mods('temp_').forEach(option=>{
+    if(!dailyOptionComplete(option,status))return;
+    const values=status.temperatureReadings&&status.temperatureReadings[option[1]]||{};
+    (S.temperatureDefinitions[option[1]]||[]).forEach(cat=>(cat.items||[]).forEach(item=>{
+     const v=values[item.id];
+     if(v===undefined||v===''||!Number.isFinite(Number(v)))return;
+     total++;
+     if(tempFlag(item.text,v)){const fix=tempFixFor(status,option[1],item.id);rows.push([scDate(day),multi?acStore(store.id):null,option[2],item.text,v+'°F',fix?fix.action:'Not recorded'].filter(x=>x!==null))}
+    }))
+   })
+  }));
+  records=[h('p',{class:'note',text:total+' readings recorded · '+rows.length+' out of range.'}),rows.length?[acTable(['Date',multi?'Store':null,'Log','Item','Reading','Corrective Action'].filter(x=>x!==null),rows.slice(0,CAP)),capNote(rows.length)]:empty('No out-of-range readings.')]
+ }
+ else if(key==='action')records=actionTable(periodActions);
+ else if(key==='critical')records=actionTable(S.actionItems.filter(a=>ids.has(a.locationId)&&a.date<=to&&a.status!=='Done'&&a.level==='critical'));
+ else if(key==='mvr'){
+  const visits=S.mvrVisits.filter(v=>v.status==='Complete'&&ids.has(v.locationId)&&v.date>=from&&v.date<=to).sort((a,b)=>b.date.localeCompare(a.date));
+  records=visits.length?acTable(['Visit Date','Store','Reviewer','Score'],visits.map(v=>[mvrDate(v.date),acStore(v.locationId),v.reviewerRole||v.reviewer||'—',v.score+'%'])):empty('No completed management visits in this range.')
+ }
+ else if(key==='ready'){
+  const rows=[];
+  scope.forEach(store=>days.forEach(day=>{
+   const status=statusOf(store,day);
+   if(!status||!Object.values(status.dailySubmissions||{}).some(Boolean))return;
+   const endOfDay=insightsParse(day).getTime()+864e5,
+    open=S.actionItems.filter(a=>a.locationId===store.id&&a.date<=day&&!(a.status==='Done'&&a.completed&&a.completed<endOfDay)),
+    penalty=open.reduce((s,a)=>s+READINESS_PENALTY[PRIORITY_LEVELS[a.level]?a.level:'medium'],0);
+   rows.push([day,scDate(day),multi?acStore(store.id):null,open.length+' open',Math.max(0,100-penalty)+'%'].filter(x=>x!==null))
+  }));
+  rows.sort((a,b)=>b[0].localeCompare(a[0]));
+  records=[h('h3',{class:'dh',text:'Related Results (context only)'}),acTable(['Measure','Result'],[['Walkthrough completion',scPct(cur.walk)],['Checklist completion',scPct(cur.check)],['Temperature compliance',scPct(cur.temp)],['Open critical actions',String(cur.openCritical)],['MVR contribution',scPct(cur.mvr)]]),
+   h('h3',{class:'dh',text:'Daily Readiness'}),rows.length?[acTable(['Date',multi?'Store':null,'Open Actions','Readiness'].filter(x=>x!==null),rows.slice(0,CAP).map(r=>r.slice(1))),capNote(rows.length)]:empty('No submitted days in this range.')]
+ }
+ else records=acTable(['Component','Weight','Result','Contribution'],(()=>{
+  const avail=SC_WEIGHTS.filter(([k])=>cur[k]!=null),w=avail.reduce((s,x)=>s+x[2],0);
+  return SC_WEIGHTS.map(([k,name,weight])=>[name,weight+'%',scPct(cur[k]),cur[k]==null?'No data':(Math.round(cur[k]*weight/w*10)/10)+' pts'])
+ })());
+ shModal(label,[head,h('h3',{class:'dh',text:'Contributing Records'}),records])
+}
+function scWireDrill(report,ctx){
+ const wire=(el,label)=>{
+  el.classList.add('sc-click');el.tabIndex=0;el.setAttribute('role','button');el.title='View details';
+  const open=()=>scOpenDrill(label,SC_DRILL[label],ctx);
+  el.onclick=open;el.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();open()}}
+ };
+ report.querySelectorAll('.sc-break tbody tr').forEach(tr=>{if(SC_DRILL[tr.firstChild.textContent])wire(tr,tr.firstChild.textContent)});
+ report.querySelectorAll('.sc-kv').forEach(kv=>{
+  const kids=[...kv.children];
+  for(let i=0;i+1<kids.length;i+=2){
+   const label=kids[i].textContent;
+   if(SC_DRILL[label]){wire(kids[i],label);wire(kids[i+1],label)}
+  }
+ });
+ const big=report.querySelector('.sc-big');
+ if(big)wire(big,'Overall Performance')
+}
+
+/* ----- Scorecard commentary (read-only in the report, editable below it) ----- */
+function scCommentarySections(report,ctx){
+ const user=ctx.user,from=ctx.days[0],to=ctx.days[ctx.days.length-1],mc=$('mc');
+ if(!ctx.single){
+  report.append(panel('Manager Commentary',empty('Commentary is saved per store. Choose a single store to view or add commentary.')));
+  return
+ }
+ const store=ctx.single,saved=cmFor(store.id,from,to),
+  previous=S.commentaries.filter(c=>c.locationId===store.id&&c.to<from).sort((a,b)=>b.to.localeCompare(a.to))[0],
+  visit=S.mvrVisits.filter(v=>v.status==='Complete'&&v.locationId===store.id&&v.date>=from&&v.date<=to&&v.commentary&&Object.keys(v.commentary).length).sort((a,b)=>b.date.localeCompare(a.date))[0];
+ report.append(panel('Manager Commentary',saved?[CM_FIELDS.map(([key,label])=>cmBlock(label,saved[key])),h('p',{class:'note',text:'Saved by '+(saved.editorName||saved.authorName||'—')+' · '+acFmtDate(saved.updated||saved.created)})]:empty('No commentary has been saved for this period.'),
+  visit?[h('h4',{text:'Management Visit Commentary · '+mvrDate(visit.date)}),MVR_COMMENTARY_FIELDS.filter(([key])=>visit.commentary[key]).map(([key,label])=>cmBlock(label,visit.commentary[key]))]:null));
+ if(previous){
+  const lines=cmLines(previous.focus);
+  report.append(panel('Previous Period Focus & Results',h('p',{class:'note',text:'From commentary for '+scDate(previous.from)+' – '+scDate(previous.to)}),
+   lines.length?lines.map(line=>{
+    const results=cmEvaluate(line,previous.snapshot.cur,ctx.cur);
+    return h('div',{class:'cm-block'},h('p',null,h('b',{text:'Previous Period Focus: '}),'“'+line+'”'),
+     results.length?results.map(r=>h('p',{class:'cm-result',text:'Current Period Result: '+r})):h('p',{class:'cm-result',text:'No linked metric — review progress with the team.'}))
+   }):empty('No focus areas were recorded.')))
+ }
+ const canEdit=hasDashboardPermission(user,'commentary'),
+  history=S.commentaries.filter(c=>c.locationId===store.id).sort((a,b)=>b.to.localeCompare(a.to)||(b.updated||0)-(a.updated||0)).slice(0,20);
+ if(canEdit){
+  const inputs=CM_FIELDS.map(([key,label])=>h('textarea',{class:'walk-task-note','aria-label':label,placeholder:key==='notes'?'Free-text comments…':'One item per line…',value:saved?saved[key]||'':''}));
+  mc.append(h('div',{class:'sc-noprint'},panel('Edit Manager Commentary',
+   h('p',{class:'note',text:'Saved for '+mvrStoreLabel(store.id)+' · '+scDate(from)+' – '+scDate(to)+'. Use one line per item.'}),
+   h('div',{class:'frm'},CM_FIELDS.map(([,label],i)=>field(label,inputs[i]))),
+   h('div',{class:'btns left'},h('button',{class:'btn',type:'button',text:saved?'Update Commentary':'Save Commentary',onclick:()=>{
+    const values={};CM_FIELDS.forEach(([key],i)=>{values[key]=inputs[i].value.trim()});
+    if(!CM_FIELDS.some(([key])=>values[key])){t('Enter commentary before saving.');return}
+    if(!cmSave(ctx,values,saved)){t('Unable to save commentary. Browser storage may be full.');return}
+    t('Commentary saved.');drawScorecard(user)
+   }})))))
+ }
+ if(history.length)mc.append(h('div',{class:'sc-noprint'},panel('Commentary History',history.map((c,i)=>cmEntry(c,false)))))
+}
+const scBaseDraw=drawScorecard;
+drawScorecard=function(user){
+ scBaseDraw(user);
+ try{
+  const report=$('mc').querySelector('.sc-report'),ctx=report&&scCtx(user);
+  if(!ctx)return;
+  scWireDrill(report,ctx);scCommentarySections(report,ctx)
+ }catch(error){console.error('Scorecard extensions failed:',error)}
+};
+
+/* ----- Operational Insights: multi-store rollup and performance vs. commentary ----- */
+function insightsRollup(user,days){
+ const stores=dailyLocationsForUser(user);
+ if(stores.length<2)return null;
+ const rows=stores.map(store=>({store,m:scMetrics([store],days)}))
+  .map(x=>{if(x.m.ready==null&&x.m.mvr==null&&x.m.action==null&&x.m.temp==null)x.m=Object.assign({},x.m,{score:null});return x})
+  .sort((a,b)=>(a.m.score==null)-(b.m.score==null)||(b.m.score||0)-(a.m.score||0)||a.store.name.localeCompare(b.store.name)),
+  scored=rows.filter(r=>r.m.score!=null),
+  network=scored.length?Math.round(scored.reduce((s,r)=>s+r.m.score,0)/scored.length):null,
+  label=r=>mvrStoreLabel(r.store.id)+' · '+r.store.name,
+  card=(title,value,sub)=>h('div',{class:'ins-card'},h('b',{text:value}),h('span',{text:title}),sub?h('small',{text:sub}):null);
+ return panel('Multi-Store Performance Rollup',
+  h('p',{class:'note',text:'All stores you can access, for '+scDate(days[0])+' – '+scDate(days[days.length-1])+'. Scores use the Performance Scorecard formulas.'}),
+  h('div',{class:'ins-grid'},card('Average Network Score',scPct(network),scored.length+' of '+rows.length+' stores scored'),
+   card('Top Performer',scored.length?scPct(scored[0].m.score):'—',scored.length?label(scored[0]):null),
+   card('Lowest Performer',scored.length>1?scPct(scored[scored.length-1].m.score):'—',scored.length>1?label(scored[scored.length-1]):null)),
+  acTable(['Rank','Store','Overall','Readiness','MVR','Action Resolution','Walkthrough'],rows.map((r,i)=>{
+   const ranked=r.m.score!=null;
+   return [ranked?String(scored.indexOf(r)+1):'—',label(r),ranked?r.m.score+'%':'No data',scPct(r.m.ready),scPct(r.m.mvr),scPct(r.m.action),scPct(r.m.walk)]
+  })))
+}
+function insightsCommentary(user,scope,days){
+ const ids=new Set(scope.map(s=>s.id)),from=days[0],to=days[days.length-1],
+  list=S.commentaries.filter(c=>ids.has(c.locationId)&&c.to>=from&&c.from<=to).sort((a,b)=>b.to.localeCompare(a.to)).slice(0,10),
+  labels={score:'Overall Score',ready:'Readiness',walk:'Walkthrough Compliance',check:'Checklist Compliance',temp:'Temperature Compliance',action:'Action Resolution',mvr:'MVR Score'};
+ return panel('Performance vs. Manager Commentary',list.length?list.map(c=>{
+  const chips=Object.keys(labels).filter(k=>c.snapshot&&c.snapshot.cur[k]!=null&&c.snapshot.prev[k]!=null&&Math.abs(c.snapshot.cur[k]-c.snapshot.prev[k])>=1)
+   .map(k=>{const d=c.snapshot.cur[k]-c.snapshot.prev[k];return h('span',{class:'cm-delta '+(d>0?'up':'down'),text:labels[k]+(d>0?' Improved ':' Declined ')+Math.abs(d)+'%'})});
+  return h('div',{class:'cm-entry'},h('b',{text:acStore(c.locationId)+' · '+scDate(c.from)+' – '+scDate(c.to)}),
+   h('div',null,chips.length?chips:h('span',{class:'note',text:'No significant metric change versus the prior period.'})),
+   c.challenges?cmBlock('Associated Manager Comment — Challenges',c.challenges):null,c.successes?cmBlock('Successes',c.successes):null)
+ }):empty('No manager commentary overlaps this period. Add commentary from the Performance Scorecard.'))
+}
+const insBaseDraw=drawInsights;
+drawInsights=function(user){
+ insBaseDraw(user);
+ try{
+  const days=insightsDays(INSIGHTS_FILTER);
+  if(!days)return;
+  const stores=dailyLocationsForUser(user),scope=INSIGHTS_FILTER.store==='all'?stores:stores.filter(s=>s.id===INSIGHTS_FILTER.store),
+   rollup=insightsRollup(user,days);
+  $('mc').append(...[rollup,hasDashboardPermission(user,'commentary')||hasDashboardPermission(user,'scorecard')?insightsCommentary(user,scope,days):null].filter(Boolean))
+ }catch(error){console.error('Insights extensions failed:',error)}
+};
+{const user=acUser();if(user)try{renderPriorityPanel(user)}catch(error){console.error(error)}}
+
 (()=>{
  const VERSION='1.0',TEXT=[
   'Shift Hero is an independent educational and portfolio project created by Evan Douma for learning, demonstration, and professional development purposes.',
