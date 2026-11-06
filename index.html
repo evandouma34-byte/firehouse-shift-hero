@@ -421,7 +421,19 @@ tr.sel{background:#ffeaea}
 .frm label.l i,.l i{color:var(--red);font-style:normal}
 @media(max-width:1000px){.ugrid{grid-template-columns:1fr}}
 @media(max-width:700px){.org{grid-template-columns:1fr 1fr}}
-footer{background:#000;color:var(--gold);text-align:center;padding:18px;font-family:var(--serif);font-weight:700;letter-spacing:.22em;font-size:14px;flex:none}
+footer{background:#000;color:var(--gold);text-align:center;padding:18px;font-family:var(--serif);font-weight:700;letter-spacing:.22em;font-size:14px;flex:none;position:relative}
+.disc-link{display:block;margin:6px auto 0;background:none;border:0;padding:4px 6px;font:600 12px var(--serif);letter-spacing:.04em;color:var(--gold);opacity:.8;cursor:pointer;text-decoration:underline}
+.brand-foot{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.14);font:400 12px/1.6 var(--serif);letter-spacing:.03em;color:rgba(255,255,255,.62)}
+.brand-foot b{color:var(--gold);font-weight:700}.brand-foot .sep{margin:0 8px;opacity:.5}
+.brand-foot span{display:inline-block}
+@media(max-width:700px){.brand-foot .sep{display:none}.brand-foot span{display:block}}
+.disc-link:hover,.disc-link:focus-visible{opacity:1}
+.disc-back{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.6)}
+.disc-modal{background:#fff;border-radius:24px;border-left:8px solid var(--gold);box-shadow:0 8px 24px rgba(0,0,0,.3);width:100%;max-width:620px;max-height:90vh;overflow:auto;padding:22px 26px}
+.disc-modal h2{font:700 26px/1.1 var(--serif);margin:0 0 14px}.disc-modal p{font-size:15px;line-height:1.5;margin:0 0 12px}
+.disc-about{border-top:1px solid #eee;padding-top:12px}.disc-about dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:15px}.disc-about dt{font-weight:700}.disc-about dd{margin:0}
+.disc-btns{display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}.disc-btns .btn{width:auto;font-size:16px;padding:10px 22px}
+@media(max-width:700px){.disc-modal{padding:18px}}
 .script{display:flex;justify-content:center;align-items:center;margin-top:24px}
 .script img{display:block;width:clamp(120px,22vw,190px);max-height:104px;object-fit:contain}
 #login .script img{width:clamp(180px,33vw,285px);max-height:156px}
@@ -2440,4 +2452,44 @@ try{
  if(savedUser&&savedUser.on){CURRENT_USER_ID=savedUser.id;setHomeUser(savedUser);show('home')}
  else sessionStorage.removeItem(SESSION_KEY)
 }catch(e){}
+/* ---------- Project disclaimer (additive; available without login) ---------- */
+(()=>{
+ const VERSION='1.0',TEXT=[
+  'Shift Hero is an independent educational and portfolio project created by Evan Douma for learning, demonstration, and professional development purposes.',
+  'This project is not affiliated with, endorsed by, sponsored by, or officially associated with Firehouse Subs, Restaurant Brands International (RBI), any franchise organization, or any other company.',
+  'Any trademarks, logos, brand imagery, fonts, names, or branding elements referenced within the project remain the property of their respective owners.',
+  'The data, users, stores, reports, scorecards, walkthroughs, action plans, and management reviews contained within this project are demonstration content only and do not represent real business information.',
+  'This project was developed to demonstrate operational thinking, leadership concepts, restaurant management workflows, and technology skills.'
+ ];
+ let backdrop=null,opener=null;
+ const close=()=>{
+  if(!backdrop)return;
+  backdrop.remove();backdrop=null;document.removeEventListener('keydown',onKey);
+  if(opener&&opener.isConnected)opener.focus()
+ },
+ onKey=e=>{
+  if(e.key==='Escape'){close();return}
+  if(e.key==='Tab'&&backdrop){
+   const f=[...backdrop.querySelectorAll('button')];
+   if(!f.length)return;
+   const first=f[0],last=f[f.length-1];
+   if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+   else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+  }
+ },
+ open=event=>{
+  if(backdrop)return;
+  opener=event.currentTarget;
+  const about=h('div',{class:'disc-about hidden'},h('dl',null,h('dt',{text:'Version'}),h('dd',{text:VERSION}),h('dt',{text:'Creator'}),h('dd',{text:'Evan Douma'}),h('dt',{text:'Project Purpose'}),h('dd',{text:'Restaurant Operations Management Portfolio Project'}))),
+   aboutBtn=h('button',{class:'btn alt',type:'button',text:'About Shift Hero','aria-expanded':'false',onclick:()=>{const on=about.classList.toggle('hidden');aboutBtn.setAttribute('aria-expanded',String(!on))}}),
+   closeBtn=h('button',{class:'btn',type:'button',text:'Close',onclick:close});
+  backdrop=h('div',{class:'disc-back',onclick:e=>{if(e.target===backdrop)close()}},
+   h('div',{class:'disc-modal',role:'dialog','aria-modal':'true','aria-labelledby':'discTitle'},
+    h('h2',{id:'discTitle',text:'Project Disclaimer'}),TEXT.map(text=>h('p',{text})),about,h('div',{class:'disc-btns'},aboutBtn,closeBtn)));
+  document.body.append(backdrop);document.addEventListener('keydown',onKey);closeBtn.focus()
+ };
+ document.querySelectorAll('footer').forEach(footer=>footer.append(
+  h('div',{class:'brand-foot'},h('span',null,h('b',{text:'Shift Hero'}),' © 2026'),h('i',{class:'sep',text:'•'}),h('span',{text:'Portfolio Project'}),h('i',{class:'sep',text:'•'}),h('span',{text:'Created by Evan Douma'}),h('i',{class:'sep',text:'•'}),h('span',{text:'Version '+VERSION})),
+  h('button',{class:'disc-link',type:'button',text:'Disclaimer',onclick:open})))
+})();
 </script></body></html>
