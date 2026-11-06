@@ -123,6 +123,33 @@ button.priority-count:active{background:#f0ece4}
 .action-row.critical{border-left:4px solid #c8102e;padding-left:10px}.action-row.high{border-left:4px solid #e8820c;padding-left:10px}.action-row.medium{border-left:4px solid #e6b800;padding-left:10px}
 .action-done summary{cursor:pointer;font:700 20px var(--serif);color:var(--red)}
 .temp-warn{border-color:#e8820c!important;background:#fff4e0!important}
+.sc-report{max-width:960px;margin:0 auto}
+.sc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.sc-head h2{font:700 28px/1.1 var(--serif);margin:0 0 4px}
+.sc-actions{display:flex;gap:10px}.sc-actions .btn{width:auto;font-size:16px;padding:10px 20px}
+.sc-info{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:14px}
+.sc-info div{display:grid;gap:2px}.sc-info small{font-size:12px;font-weight:700;text-transform:uppercase;color:#777}.sc-info b{font-size:16px}
+.sc-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 22px}
+.sc-overall{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.sc-big{display:grid;justify-items:center;gap:6px;min-width:170px;padding:14px 20px;border-radius:16px;border-top:6px solid var(--red);background:#faf9f6}
+.sc-big b{font:700 56px/1 var(--serif)}.sc-big span{font-weight:700;font-size:18px;padding:3px 14px;border-radius:20px;color:#fff;background:#666}
+.sc-big.excellent span{background:#1f7a3d}.sc-big.strong span{background:#2f6fb0}.sc-big.needs span{background:#c77700}.sc-big.critical span{background:#b3261e}
+.sc-break{flex:1;min-width:260px;border-collapse:collapse;font-size:14px}.sc-break th,.sc-break td{text-align:left;padding:5px 8px;border-bottom:1px solid #eee}
+.sc-kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:15px}.sc-kv b{text-align:right}
+.sc-pos{color:#1f7a3d}.sc-neg{color:#b3261e}
+.sc-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.sc-opp{padding:8px 12px;border-left:4px solid var(--gold);background:#faf9f6;border-radius:8px}.sc-opp p{margin:3px 0 0;font-size:14px}
+@media(max-width:700px){.sc-cols{grid-template-columns:1fr}}
+@media print{
+ @page{size:letter portrait;margin:.4in}
+ #mod:has(.sc-report){background:#fff}
+ #mod:has(.sc-report)>header,#mod:has(.sc-report)>.hero,#mod:has(.sc-report)>footer,.sc-noprint{display:none!important}
+ #mod:has(.sc-report) main{padding:0;margin:0}
+ .sc-report{max-width:none;font-size:11px;zoom:.78}
+ .sc-report .panel{box-shadow:none;border:1px solid #ddd;border-left:6px solid var(--gold);border-radius:10px;padding:8px 12px;margin-bottom:8px!important;break-inside:avoid}
+ .sc-report h3{font-size:14px;margin:0 0 6px}.sc-big b{font-size:40px}.sc-head h2{font-size:22px}
+ .sc-report *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 .ins-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .ins-card{display:grid;justify-items:center;gap:4px;padding:14px 10px;border:1px solid #eee;border-top:5px solid var(--red);border-radius:12px;background:#faf9f6;text-align:center}
 .ins-card b{font:700 30px/1 var(--serif);color:#222}.ins-card span{font-size:14px;font-weight:700;color:#444}
@@ -507,6 +534,7 @@ const DASHBOARD_ACCESS=[
  ['dash_entries','entries','View Entries','Review submitted walkthroughs, checklists, and temperature logs.','ops'],
  ['dash_actions','actions','Action Center','Review and update action items created from walkthroughs.','ops'],
  ['dash_insights','insights','Operational Insights','Review recurring issues, trends, and improvement opportunities.','ops'],
+ ['dash_scorecard','scorecard','Performance Scorecard','Generate a printable restaurant performance business review.','ops'],
  ['dash_mvr','mvr','Management Visits','Complete and review Management Visitation Reports.','ops']
 ];
 const HOME_PERMISSION_BY_MODULE={};DASHBOARD_ACCESS.forEach(option=>HOME_PERMISSION_BY_MODULE[option[1]]=option[0]);
@@ -1958,6 +1986,174 @@ function generateMvrActions(visit){
  });
  return added
 }
+/* ---------- Restaurant Performance Scorecard (read-only; consumes existing data) ---------- */
+let SC_FILTER={store:'',range:'30',from:'',to:'',ready:false,generated:null};
+const SC_WEIGHTS=[['walk','Walkthrough Compliance',20],['check','Checklist Compliance',20],['temp','Temperature Log Compliance',15],['action','Action Plan Resolution',15],['ready','Readiness Score',15],['mvr','MVR Score',15]];
+const SC_RECOMMENDATIONS=[
+ [/label|expir|dated?\b/i,'Review expiration date verification process.'],
+ [/temp|cooler|freezer|hot|cold/i,'Re-train team on temperature checks and verify equipment calibration.'],
+ [/dining|table|chair|lobby|floor/i,'Assign dining room checks to a named owner each shift and re-check before peak.'],
+ [/bath|restroom/i,'Add scheduled restroom checks with a sign-off at set intervals.'],
+ [/tea|beverage|drink/i,'Add tea and beverage station checks to the pre-peak routine.'],
+ [/clean|sanit|trash|wipe/i,'Reinforce cleaning schedules and assign owners for each task.'],
+ [/stock|supply|supplies|prep/i,'Review par levels and prep schedules before each shift.'],
+ [/uniform|team|staff|train/i,'Coach the team on expectations during pre-shift huddles.']
+];
+const scPct=v=>v==null?'—':Math.round(v)+'%';
+const scSigned=v=>(v>0?'+':'')+Math.round(v)+'%';
+const scDate=key=>insightsParse(key).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+function scBand(score){return score>=95?['excellent','Excellent']:score>=85?['strong','Strong']:score>=75?['needs','Needs Improvement']:['critical','Critical Attention']}
+function scDays(filter){
+ if(filter.range==='mtd'){const now=new Date(),days=[];for(let d=new Date(now.getFullYear(),now.getMonth(),1);d<=now;d.setDate(d.getDate()+1))days.push(insightsKey(d));return days}
+ return insightsDays(filter)
+}
+function scPrevDays(days){
+ const start=insightsParse(days[0]);
+ return days.map((_,i)=>insightsKey(new Date(start.getFullYear(),start.getMonth(),start.getDate()-(days.length-i))))
+}
+function scMetrics(scope,days){
+ const ids=new Set(scope.map(store=>store.id)),from=days[0],to=days[days.length-1],
+  mods=prefix=>DASHBOARD_ACCESS.filter(option=>option[1].indexOf(prefix)===0),
+  statusOf=(store,day)=>S.dailyStatus&&S.dailyStatus[day+'|'+store.id],
+  completion=list=>{
+   const total=list.length*days.length*scope.length;
+   if(!total)return null;
+   let done=0;
+   scope.forEach(store=>days.forEach(day=>{const status=statusOf(store,day)||{};list.forEach(option=>{if(dailyOptionComplete(option,status))done++})}));
+   return done/total*100
+  },
+  walkMods=mods('walk_'),findings=[];
+ let readings=0,inRange=0;
+ const readinessScores=[];
+ scope.forEach(store=>days.forEach(day=>{
+  const status=statusOf(store,day);
+  if(!status)return;
+  walkMods.forEach(option=>{
+   if(!dailyOptionComplete(option,status))return;
+   const checks=status.walkthroughItems&&status.walkthroughItems[option[1]]||{};
+   (S.walkthroughItems.categories||[]).forEach(category=>(category.items||[]).forEach(item=>{
+    if(checks[item.id]!==true)findings.push({name:item.text,category:category.name})
+   }))
+  });
+  mods('temp_').forEach(option=>{
+   if(!dailyOptionComplete(option,status))return;
+   const values=status.temperatureReadings&&status.temperatureReadings[option[1]]||{};
+   (S.temperatureDefinitions[option[1]]||[]).forEach(category=>(category.items||[]).forEach(item=>{
+    const value=values[item.id];
+    if(value===undefined||value===''||!Number.isFinite(Number(value)))return;
+    readings++;if(!tempFlag(item.text,value))inRange++
+   }))
+  });
+  if(Object.values(status.dailySubmissions||{}).some(Boolean)){
+   const endOfDay=insightsParse(day).getTime()+864e5,
+    penalty=S.actionItems.filter(action=>action.locationId===store.id&&action.date<=day&&!(action.status==='Done'&&action.completed&&action.completed<endOfDay))
+     .reduce((sum,action)=>sum+READINESS_PENALTY[PRIORITY_LEVELS[action.level]?action.level:'medium'],0);
+   readinessScores.push(Math.max(0,100-penalty))
+  }
+ }));
+ const actions=S.actionItems.filter(action=>ids.has(action.locationId)&&action.date>=from&&action.date<=to),
+  done=actions.filter(action=>action.status==='Done'),
+  resolved=done.filter(action=>action.completed&&action.created&&action.completed>=action.created),
+  openCritical=S.actionItems.filter(action=>ids.has(action.locationId)&&action.date<=to&&action.status!=='Done'&&action.level==='critical').length,
+  completed=S.mvrVisits.filter(visit=>visit.status==='Complete'&&ids.has(visit.locationId)).sort((a,b)=>a.date.localeCompare(b.date)||a.created-b.created),
+  periodVisits=completed.filter(visit=>visit.date>=from&&visit.date<=to),
+  latest=periodVisits[periodVisits.length-1]||null,
+  previous=latest?completed.filter(visit=>visit.date<latest.date||(visit.date===latest.date&&visit.created<latest.created)).pop()||null:null,
+  m={
+   walk:completion(walkMods),check:completion(mods('check_')),temp:readings?inRange/readings*100:null,
+   action:actions.length?done.length/actions.length*100:null,
+   ready:readinessScores.length?readinessScores.reduce((a,b)=>a+b,0)/readinessScores.length:null,
+   mvr:periodVisits.length?periodVisits.reduce((sum,visit)=>sum+visit.score,0)/periodVisits.length:null,
+   created:actions.length,closed:done.length,openCritical,
+   avgResolution:resolved.length?insightsDuration(resolved.reduce((sum,action)=>sum+action.completed-action.created,0)/resolved.length):'—',
+   mvrCurrent:latest?latest.score:null,mvrPrevious:previous?previous.score:null,mvrCount:periodVisits.length,findings
+  },
+  available=SC_WEIGHTS.filter(([key])=>m[key]!=null),weight=available.reduce((sum,item)=>sum+item[2],0);
+ m.score=weight?Math.round(available.reduce((sum,[key,,w])=>sum+m[key]*w,0)/weight):null;
+ m.missing=SC_WEIGHTS.filter(([key])=>m[key]==null).map(item=>item[1]);
+ return m
+}
+function scGroupFindings(findings){
+ const map=new Map();
+ findings.forEach(item=>{const entry=map.get(item.name)||{name:item.name,category:item.category,count:0};entry.count++;map.set(item.name,entry)});
+ return [...map.values()].sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name))
+}
+function scRecommend(entry){
+ const text=entry.category+' '+entry.name,rule=SC_RECOMMENDATIONS.find(item=>item[0].test(text));
+ return rule?rule[1]:'Make this a focus item in pre-shift huddles and verify the correction at the next walkthrough.'
+}
+function openScorecard(user){
+ if(!user||!hasDashboardPermission(user,'scorecard')){t('You do not have permission to access this function.');return}
+ $('mt').textContent='Performance Scorecard';
+ $('md').textContent='A printable business review of how this restaurant is performing.';
+ drawScorecard(user);show('mod')
+}
+function drawScorecard(user){
+ const stores=dailyLocationsForUser(user),filter=SC_FILTER;
+ if(filter.store!=='all'&&!stores.some(store=>store.id===filter.store))filter.store=(selectedDailyLocation(user)||stores[0]||{}).id||'all';
+ const storeSelect=h('select',{'aria-label':'Store'},stores.length>1?h('option',{value:'all',text:'All Locations'}):null,stores.map(store=>h('option',{value:store.id,text:locationPath(store)}))),
+  rangeSelect=h('select',{'aria-label':'Date range'},[['7','Last 7 Days'],['30','Last 30 Days'],['90','Last 90 Days'],['mtd','Month To Date'],['custom','Custom Range']].map(([value,text])=>h('option',{value,text}))),
+  fromInput=h('input',{type:'date',value:filter.from,'aria-label':'Start date'}),toInput=h('input',{type:'date',value:filter.to,'aria-label':'End date'}),
+  customRow=h('div',{class:'ins-custom'+(filter.range==='custom'?'':' hidden')},field('From',fromInput),field('To',toInput));
+ if(filter.store==='all'&&stores.length>1||stores.some(store=>store.id===filter.store))storeSelect.value=filter.store;
+ rangeSelect.value=filter.range;
+ rangeSelect.onchange=()=>customRow.classList.toggle('hidden',rangeSelect.value!=='custom');
+ const generate=()=>{
+  const next={store:storeSelect.value,range:rangeSelect.value,from:fromInput.value,to:toInput.value};
+  if(!stores.length){t('No restaurants are available for your account.');return}
+  if(next.range==='custom'&&!insightsDays(next)){t('Choose a valid range (up to 1 year, end after start).');return}
+  SC_FILTER=Object.assign(next,{ready:true,generated:new Date()});
+  drawScorecard(user)
+ },
+ filterCard=h('div',{class:'sc-noprint'},panel(null,h('div',{class:'frm ins-filters'},field('Store',storeSelect),field('Date Range',rangeSelect),customRow,h('div',{class:'btns left'},h('button',{class:'btn sm2',type:'button',text:'Generate Scorecard',onclick:generate})))));
+ if(!filter.ready){$('mc').replaceChildren(filterCard,panel(null,empty('Select a store and date range, then press Generate Scorecard.')));return}
+ const days=scDays(filter);
+ if(!days||!days.length){$('mc').replaceChildren(filterCard,panel(null,empty('Choose a valid date range and press Generate Scorecard.')));return}
+ const scope=filter.store==='all'?stores:stores.filter(store=>store.id===filter.store),
+  cur=scMetrics(scope,days),prevDays=scPrevDays(days),prev=scMetrics(scope,prevDays),
+  single=scope.length===1?scope[0]:null,nameMatch=single&&single.name.match(/^#(\d+)\s*[-–]\s*(.+)$/),
+  storeName=single?(nameMatch?nameMatch[2]:single.name):'All Locations ('+scope.length+' stores)',
+  storeNumber=single?(nameMatch?'#'+nameMatch[1]:'—'):'Multiple',
+  range=scDate(days[0])+' – '+scDate(days[days.length-1]),
+  prevRange=scDate(prevDays[0])+' – '+scDate(prevDays[prevDays.length-1]),
+  kv=rows=>h('div',{class:'sc-kv'},rows.map(([label,value,cls])=>[h('span',{text:label}),h('b',{class:cls||'',text:value})])),
+  changeText=(a,b)=>a==null||b==null?'—':scSigned(a-b),changeClass=(a,b)=>a==null||b==null?'':a-b>=0?'sc-pos':'sc-neg',
+  band=cur.score==null?null:scBand(cur.score),
+  top=scGroupFindings(cur.findings),totalFindings=cur.findings.length,
+  opportunities=top.filter(entry=>entry.count>=2).slice(0,3),
+  highlights=[];
+ if(cur.temp!=null&&cur.temp>=95)highlights.push(scPct(cur.temp)+' Temperature Compliance');
+ if(cur.walk!=null&&cur.walk>=90)highlights.push(scPct(cur.walk)+' Walkthrough Completion');
+ if(cur.check!=null&&cur.check>=90)highlights.push(scPct(cur.check)+' Checklist Completion');
+ if(cur.action!=null&&cur.action>=80)highlights.push(scPct(cur.action)+' Action Closure Rate');
+ if(cur.ready!=null&&cur.ready>=90)highlights.push(scPct(cur.ready)+' Average Readiness');
+ if(cur.mvrCurrent!=null&&cur.mvrPrevious!=null&&cur.mvrCurrent>cur.mvrPrevious)highlights.push('MVR Improved '+(cur.mvrCurrent-cur.mvrPrevious)+'%');
+ if(cur.openCritical===0&&cur.created>0)highlights.push('No open critical actions');
+ if(cur.score!=null&&prev.score!=null&&cur.score>prev.score)highlights.push('Overall score up '+(cur.score-prev.score)+' points vs. prior period');
+ const report=h('div',{class:'sc-report'},
+  panel(null,h('div',{class:'sc-head'},h('div',null,h('h2',{text:'Restaurant Performance Scorecard'}),h('p',{class:'note',text:'Business review generated from Shift Hero operational data'})),
+   h('div',{class:'sc-actions sc-noprint'},btnI('clipboard','Print Scorecard','',()=>window.print()),btnI('save','Export PDF','alt',()=>{t('In the print dialog, choose Save as PDF as the destination.');setTimeout(()=>window.print(),100)}))),
+   h('div',{class:'sc-info'},[['Store Name',storeName],['Store Number',storeNumber],['Date Range',range],['Generated',(filter.generated||new Date()).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})]].map(([label,value])=>h('div',null,h('small',{text:label}),h('b',{text:value}))))),
+  panel('Overall Performance Score',cur.score==null?empty('Not enough data in this period to calculate a score.'):h('div',{class:'sc-overall'},
+   h('div',{class:'sc-big '+band[0]},h('b',{text:cur.score+'%'}),h('span',{text:band[1]})),
+   h('table',{class:'sc-break'},h('thead',null,h('tr',null,['Component','Weight','Result'].map(text=>h('th',{text})))),
+    h('tbody',null,SC_WEIGHTS.map(([key,label,weight])=>h('tr',null,h('td',{text:label}),h('td',{text:weight+'%'}),h('td',{text:scPct(cur[key])}))))),
+   cur.missing.length?h('p',{class:'note',text:'No data for: '+cur.missing.join(', ')+'. The score is calculated from the remaining weighted components.'}):null)),
+  h('div',{class:'sc-cols'},
+   panel('Operational Excellence',kv([['Walkthrough Completion',scPct(cur.walk)],['Checklist Completion',scPct(cur.check)],['Temperature Compliance',scPct(cur.temp)],['Average Readiness',scPct(cur.ready)]])),
+   panel('Execution Metrics',kv([['Actions Created',String(cur.created)],['Actions Closed',String(cur.closed)],['Action Closure Rate',scPct(cur.action)],['Average Resolution Time',cur.avgResolution],['Open Critical Actions',String(cur.openCritical)]]))),
+  h('div',{class:'sc-cols'},
+   panel('Management Review',cur.mvrCount?kv([['Average MVR Score',scPct(cur.mvr)],['Current MVR',scPct(cur.mvrCurrent)],['Previous MVR',scPct(cur.mvrPrevious)],['MVR Trend',cur.mvrPrevious==null?'—':scSigned(cur.mvrCurrent-cur.mvrPrevious),cur.mvrPrevious==null?'':cur.mvrCurrent>=cur.mvrPrevious?'sc-pos':'sc-neg']]):empty('No management visits completed in this period.')),
+   panel('Top Findings',top.length?h('div',{class:'sc-kv'},top.slice(0,5).map(entry=>[h('span',{text:entry.name+' ('+entry.category+')'}),h('b',{text:entry.count+' Finding'+(entry.count===1?'':'s')})])):empty('No walkthrough findings in this period.'))),
+  h('div',{class:'sc-cols'},
+   panel('Top Opportunities',opportunities.length?opportunities.map(entry=>h('div',{class:'sc-opp'},h('b',{text:entry.name}),h('p',{text:entry.count+' occurrences · '+Math.round(entry.count/totalFindings*100)+'% of Findings'}),h('p',null,h('b',{text:'Recommendation: '}),scRecommend(entry)))):empty('No recurring issues identified in this period.')),
+   panel('Positive Highlights',highlights.length?h('ul',{class:'sc-list'},highlights.slice(0,6).map(text=>h('li',{text:'✓ '+text}))):empty('No standout results yet. Keep building consistency.'))),
+  panel('Trend Summary',h('div',{class:'ins-grid'},
+   h('div',{class:'ins-card'},h('b',{text:scPct(cur.score)}),h('span',{text:'Current Period Score'}),h('small',{text:range})),
+   h('div',{class:'ins-card'},h('b',{text:scPct(prev.score)}),h('span',{text:'Previous Period Score'}),h('small',{text:prevRange})),
+   h('div',{class:'ins-card'},h('b',{class:changeClass(cur.score,prev.score),text:changeText(cur.score,prev.score)}),h('span',{text:'Performance Change'})))));
+ $('mc').replaceChildren(filterCard,report)
+}
 function openMvr(user){
  if(!user||!hasDashboardPermission(user,'mvr')){t('You do not have permission to access this function.');return}
  $('mt').textContent='Management Visits';
@@ -2130,6 +2326,7 @@ Object.entries(homeSectionOptions).forEach(([title,config])=>{
   h('button',{class:'tile','data-n':'View Entries','data-module':'entries',type:'button',onclick:openEntries},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'View Entries'}),h('span',{class:'chev',text:'›'})),
   h('button',{class:'tile','data-n':'Action Center','data-module':'actions',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'Action Center'}),h('span',{class:'chev',text:'›'})),
   h('button',{class:'tile','data-n':'Operational Insights','data-module':'insights',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'Operational Insights'}),h('span',{class:'chev',text:'›'})),
+  h('button',{class:'tile','data-n':'Performance Scorecard','data-module':'scorecard',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'Performance Scorecard'}),h('span',{class:'chev',text:'›'})),
   h('button',{class:'tile','data-n':'Management Visits','data-module':'mvr',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'Management Visits'}),h('span',{class:'chev',text:'›'}))
  );
  if(config.description)options.replaceWith(h('p',{class:'home-section-placeholder',text:config.description}));
@@ -2142,6 +2339,7 @@ document.querySelectorAll('#home button[data-n]').forEach(button=>{
 });
 document.querySelector('#home button[data-module="insights"]').onclick=()=>openInsights(items('users').find(account=>account.id===CURRENT_USER_ID));
 document.querySelector('#home button[data-module="mvr"]').onclick=()=>openMvr(items('users').find(account=>account.id===CURRENT_USER_ID));
+document.querySelector('#home button[data-n="Performance Scorecard"]').onclick=()=>openScorecard(items('users').find(account=>account.id===CURRENT_USER_ID));
 $('hb').onclick=()=>show('home');$('ab').onclick=()=>show('home');$('eb').onclick=()=>{if(!isSystemAdministrator()){show('home');return}renderAdmin();show('admin')};
 $('umb').onclick=leaveUM;$('usb').onclick=goUM;
 /* Demo environment initialization */
