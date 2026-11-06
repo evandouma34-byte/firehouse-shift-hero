@@ -470,6 +470,21 @@ footer{background:#000;color:var(--gold);text-align:center;padding:18px;font-fam
 #login .burger{display:none}
 .help-topic{border-top:1px solid #eee;padding:12px 0}.help-topic summary{cursor:pointer;font-weight:700;font-size:17px}.help-topic p{margin:10px 0 0;color:#444;line-height:1.5}
 #login>header{padding-right:16px}
+.demo-launch{margin-top:4px;font-size:18px;padding:13px 18px}
+.demo-banner{position:sticky;top:0;z-index:900;display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;padding:9px 16px;background:#282420;color:#fff;border-bottom:3px solid var(--gold);font-size:14px}
+.demo-banner strong{font-family:var(--serif);letter-spacing:.07em;color:#ffdc91}
+.demo-banner button{width:auto;min-height:38px;padding:7px 18px;font-size:15px;background:#fff;color:var(--red)}
+.demo-banner button:active{background:#eee}
+.demo-modal{max-width:900px}
+.demo-modal .demo-subtitle{color:#555;margin-bottom:18px}
+.demo-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.demo-role{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:16px;border:1px solid #e0dcd2;border-radius:16px;background:#faf9f6}
+.demo-role h3{margin:0;font:700 19px var(--serif);color:var(--red)}
+.demo-role p{flex:1;margin:0;color:#444;font-size:14px;line-height:1.45}
+.demo-role .btn{width:auto;min-height:40px;padding:9px 16px;font-size:14px}
+.demo-error{color:var(--red);font-weight:700;margin-top:12px}
+@media(max-width:700px){.demo-cards{grid-template-columns:1fr}.demo-banner{gap:8px 14px;justify-content:space-between}.demo-role .btn{width:100%}}
+@media print{.demo-banner{display:none!important}}
 .login-art img{position:absolute;left:0;top:0;height:100%;width:auto;transform:translateX(-22%)}
 @media(max-width:1000px){.login-art{display:none}}
 .app:not(#login)>header>img{cursor:pointer}
@@ -487,6 +502,7 @@ footer{background:#000;color:var(--gold);text-align:center;padding:18px;font-fam
   <label class="fld"><svg viewBox="0 0 24 24"><path d="M6 10V7a6 6 0 0112 0v3h2v13H4V10zm3 0h6V7a3 3 0 00-6 0z"/></svg><input id="p" type="password" placeholder="Password" autocomplete="current-password"><button type="button" class="eye" id="eye" aria-label="Show password"><svg viewBox="0 0 24 24"><path d="M12 5C6 5 2 12 2 12s4 7 10 7 10-7 10-7-4-7-10-7zm0 11a4 4 0 110-8 4 4 0 010 8zm0-6a2 2 0 100 4 2 2 0 000-4z"/></svg></button></label>
   <div class="row"><label><input type="checkbox"> Keep me signed in</label><a href="#" id="fp">Forgot Password?</a></div>
   <button class="btn" type="button" id="go">Sign In <span>›</span></button><div class="err" id="err"></div>
+  <button class="btn alt demo-launch" type="button" id="exploreDemo">Explore Shift Hero</button>
   <div class="demo-note hidden" id="demoNote"><b>Demo Account</b>Email:<br>admin@shifthero.demo</div>
   <div class="script">More Than A Sub®</div>
  </div></main>
@@ -1253,7 +1269,7 @@ function renderAdmin(){
  g.replaceChildren(
   panel('FRUM',h('div',{class:'grid'},userTools)),
   panel('Content Management',h('div',{class:'grid'},contentTools)),
-  panel('Task Manager',h('div',{class:'grid'},taskTools))
+  panel('Action Manager',h('div',{class:'grid'},taskTools))
  )
 }
 let EDIT=null;
@@ -1944,7 +1960,7 @@ function drawInsights(user){
    card('Walkthrough Completion',completion(walkMods)),card('Checklist Completion',completion(checkMods)),card('Temperature Log Completion',completion(tempMods)),
    card('Action Resolution',actions.length?Math.round(doneActions.length/actions.length*100)+'%':'—'),card('Average Readiness',avgReadiness))),
   panel('Recurring Findings',common.length?[h('p',{class:'note',text:'Most common issues'},),...rows(common.slice(0,10),entry=>entry.count+' Finding'+(entry.count===1?'':'s'))]:empty('No walkthrough findings in this period.')),
-  panel('Critical Findings',critical.length?[h('p',{class:'note',text:'Most frequently flagged critical issues'}),...rows(critical.slice(0,10),entry=>entry.count+' Critical Finding'+(entry.count===1?'':'s')+' · Last '+insightsParse(entry.last).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}))]:empty('No critical findings in this period. Set item priorities in Admin Portal › Task Manager.')),
+  panel('Critical Findings',critical.length?[h('p',{class:'note',text:'Most frequently flagged critical issues'}),...rows(critical.slice(0,10),entry=>entry.count+' Critical Finding'+(entry.count===1?'':'s')+' · Last '+insightsParse(entry.last).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}))]:empty('No critical findings in this period. Set item priorities in Admin Portal › Action Manager.')),
   panel('Action Plan Performance',h('div',{class:'ins-grid'},
    card('Total Actions Created',String(actions.length)),card('Completed Actions',String(doneActions.length)),card('Open Actions',String(actions.length-doneActions.length)),
    card('Action Completion Rate',actions.length?Math.round(doneActions.length/actions.length*100)+'%':'—'),card('Avg Resolution Time',avgResolution))),
@@ -2382,13 +2398,9 @@ document.querySelector('#home button[data-n="Performance Scorecard"]').onclick=(
 $('hb').onclick=()=>show('home');$('ab').onclick=()=>show('home');$('eb').onclick=()=>{if(!isSystemAdministrator()){show('home');return}renderAdmin();show('admin')};
 $('umb').onclick=leaveUM;$('usb').onclick=goUM;
 /* Demo environment initialization */
-(async()=>{
- const DEMO_EMAIL='admin@shifthero.demo',
-  showDemoNotice=()=>{const box=$('demoNote');if(box)box.classList.toggle('hidden',!items('users').some(account=>String(account.email).toLowerCase()===DEMO_EMAIL))};
- if(DEMO_FRESH_INSTALL){
-  try{
-   const passwordHash=await hashPassword('ShiftHero123!'),
-    users=S.d.users=Array.isArray(S.d.users)?S.d.users:[];
+const DEMO_EMAIL='admin@shifthero.demo';
+function populateDemoData(passwordHash){
+   const users=S.d.users=Array.isArray(S.d.users)?S.d.users:[];
    if(!users.some(account=>String(account.email).toLowerCase()===DEMO_EMAIL)){
     const now=new Date(),dayKey=n=>insightsKey(new Date(now.getFullYear(),now.getMonth(),now.getDate()-n)),
      dayTime=(n,hour)=>new Date(now.getFullYear(),now.getMonth(),now.getDate()-n,hour).getTime(),
@@ -2470,9 +2482,14 @@ $('umb').onclick=leaveUM;$('usb').onclick=goUM;
     }
     if(!save())console.error('Unable to save the demo environment. Browser storage may be full.')
    }
-  }catch(e){console.error('Unable to create the demo environment:',e)}
+}
+const demoInitialization=(async()=>{
+ if(DEMO_FRESH_INSTALL){
+  try{populateDemoData(await hashPassword('ShiftHero123!'))}
+  catch(e){console.error('Unable to create the demo environment:',e)}
  }
- showDemoNotice()
+ const box=$('demoNote');
+ if(box)box.classList.toggle('hidden',!items('users').some(account=>String(account.email).toLowerCase()===DEMO_EMAIL))
 })();
 try{
  const savedUserId=sessionStorage.getItem(SESSION_KEY),savedUser=savedUserId&&items('users').find(account=>String(account.id)===savedUserId);
@@ -3036,6 +3053,193 @@ drawInsights=function(user){
  }catch(error){console.error('Insights extensions failed:',error)}
 };
 {const user=acUser();if(user)try{renderPriorityPanel(user)}catch(error){console.error(error)}}
+
+/* ---------- Isolated portfolio demo ---------- */
+(()=>{
+ const operational=['check_opening','check_midday','check_closing','temp_morning','temp_midday','temp_evening','actions','entries'],
+  management=operational.concat(['walk_morning','walk_evening','food_order']),
+  leadership=management.concat(['insights','scorecard','mvr','commentary']),
+  roles=[
+   {name:'Team Member',description:'Complete checklists, temperature logs, and assigned operational tasks.',level:'Restaurant',modules:operational},
+   {name:'Shift Manager',description:'Manage daily operations, walkthroughs, readiness, and action plans.',level:'Restaurant',modules:management},
+   {name:'Restaurant Manager',description:'Monitor store performance, operational insights, scorecards, and team execution.',level:'Restaurant',modules:leadership},
+   {name:'Area Manager',description:'Review multi-store performance, rankings, management visits, and operational trends.',level:'Area',modules:leadership},
+   {name:'Franchise Business Partner',description:'Analyze performance scorecards, business reviews, MVR results, and coaching opportunities.',level:'Regional',modules:leadership},
+   {name:'System Administrator',description:'Access all available features, settings, users, and administrative tools.',level:'Corporate',modules:DASHBOARD_ACCESS.map(option=>option[1]),admin:true}
+  ],
+  normalSave=save,normalHashPassword=hashPassword,normalReadPhoto=readWalkthroughPhoto,
+  banner=h('div',{class:'demo-banner hidden',role:'region','aria-label':'Demo environment'},
+   h('strong',{text:'DEMO ENVIRONMENT'}),
+   h('span',{id:'demoRole'}),
+   h('button',{class:'btn',type:'button',text:'Exit Demo',onclick:exitDemo}));
+ let session=null,backdrop=null,opener=null,sessionGeneration=0;
+ document.body.prepend(banner);
+
+ async function finishDemoOperation(operation,generation){
+  const result=await operation;
+  if(sessionGeneration!==generation)throw new Error('The active session has changed.');
+  return result
+ }
+ hashPassword=function(password,salt){return finishDemoOperation(normalHashPassword(password,salt),sessionGeneration)};
+ readWalkthroughPhoto=function(file){return finishDemoOperation(normalReadPhoto(file),sessionGeneration)};
+
+ save=function(){
+  if(!session)return normalSave();
+  const user=acUser(),next=auditSnapshot();
+  if(user){
+   try{
+    const events=auditDiff(acSnap,next,user);
+    S.auditLog.push(...events);
+    if(S.auditLog.length>AUDIT_MAX)S.auditLog.splice(0,S.auditLog.length-AUDIT_MAX)
+   }catch(error){console.error('Demo audit capture failed:',error)}
+  }
+  acSnap=next;
+  return true
+ };
+
+ function createDemoState(){
+  const state=seed();
+  Object.assign(state,{
+   locations:DEFAULT_LOCATIONS.filter(location=>location.id==='loc-home-office'||location.id==='loc-southeast').map(location=>Object.assign({},location)),
+   walkthroughItems:{categories:[]},walkthroughPriorities:{},actionItems:[],
+   checklistDefinitions:{check_opening:[],check_midday:[],check_closing:[]},
+   temperatureDefinitions:{temp_morning:[],temp_midday:[],temp_evening:[]},
+   foodOrderDefinitions:[],dailyStatus:{},dailyLocationSelection:{},dailyDateSelection:{},
+   mvrVisits:[],mvrDefinitions:MVR_CATEGORIES.map(([name])=>({id:'mvr-category-'+name.toLowerCase().replace(/\W+/g,'-'),name,items:[]})),
+   roles:['System Administrator','Operations Director','Regional Director','Area Representative','Area Manager','Franchise Business Partner','Restaurant Manager','Assistant Manager','Shift Manager','Team Member'].map(name=>({name,perms:defaultRolePermissions(name)})),
+   auditLog:[],commentaries:[]
+  });
+  return state
+ }
+ function addDemoLocations(){
+  const original='loc-demo-store',second='loc-demo-store-2';
+  S.locations.push({id:second,name:'#10002 - Demo Restaurant, Lakeside',type:'Store',parentId:'loc-southeast'});
+  Object.entries(S.dailyStatus).forEach(([key,status])=>{
+   if(key.endsWith('|'+original)){
+    const copy=JSON.parse(JSON.stringify(status));
+    if(copy.dailySubmissions&&Number(key.slice(8,10))%3===0)delete copy.dailySubmissions.check_midday;
+    S.dailyStatus[key.slice(0,-original.length)+second]=copy
+   }
+  });
+  const visitIds={};
+  S.mvrVisits.slice().filter(visit=>visit.locationId===original).forEach(visit=>{
+   const copy=JSON.parse(JSON.stringify(visit));
+   copy.id='mvr-'+nid();copy.locationId=second;visitIds[visit.id]=copy.id;S.mvrVisits.push(copy)
+  });
+  S.actionItems.slice().filter(action=>action.locationId===original).forEach(action=>{
+   const copy=JSON.parse(JSON.stringify(action));
+   copy.id='action-'+nid();copy.locationId=second;
+   copy.key=copy.key.replace(original,second);
+   if(copy.sourceWalkthroughId)copy.sourceWalkthroughId=copy.sourceWalkthroughId.replace(original,second);
+   Object.keys(visitIds).forEach(id=>{
+    copy.key=copy.key.replace('mvr|'+id+'|','mvr|'+visitIds[id]+'|');
+    if(copy.sourceWalkthroughId==='mvr|'+id)copy.sourceWalkthroughId='mvr|'+visitIds[id]
+   });
+   S.actionItems.push(copy)
+  });
+ }
+ function closeModal(){
+  if(!backdrop)return;
+  backdrop.remove();backdrop=null;document.removeEventListener('keydown',modalKey,true);
+  if(opener&&opener.isConnected)opener.focus()
+ }
+ function modalKey(event){
+  if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();closeModal();return}
+  if(event.key!=='Tab'||!backdrop)return;
+  const buttons=[...backdrop.querySelectorAll('button:not(:disabled)')],first=buttons[0],last=buttons[buttons.length-1];
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
+ }
+ async function launch(role,error,buttons){
+  buttons.forEach(button=>button.disabled=true);
+  error.textContent='';
+  try{
+   await demoInitialization;
+   if(!backdrop)return;
+   if(CURRENT_USER_ID!==null||$('login').classList.contains('hidden')){closeModal();t('Sign out before starting a demo.');return}
+   session={
+    state:S,audit:acSnap,userId:CURRENT_USER_ID,
+    insights:INSIGHTS_FILTER,scorecard:SC_FILTER,mvr:MVR_FILTER,action:ACTION_FILTER,
+    auditView:AUD_VIEW,userManagement:Object.assign({},UMS),previousView:PREV,edit:EDIT,locationEdit:LOCATION_EDIT_ID,
+    locationExpanded:new Set(LOCATION_EXPANDED),locationInitialized:LOCATION_TREE_INITIALIZED,locationZoom:LOCATION_ZOOM
+   };
+   sessionGeneration++;
+   S=createDemoState();
+   CURRENT_USER_ID=null;
+   populateDemoData(null);
+   addDemoLocations();
+   S.d.users.forEach(account=>{
+    const location=S.locations.find(item=>item.id===(account.level==='Restaurant'?'loc-demo-store':account.level==='Corporate'?'loc-home-office':'loc-southeast'));
+    account.locationId=location.id;account.store=location.name
+   });
+   const permissions={};
+   PERMS.forEach(permission=>{permissions[permission[0]]=false});
+   permissions.ops=true;permissions.rep=role.modules.includes('commentary');permissions.um=!!role.admin;permissions.admin=!!role.admin;
+   DASHBOARD_ACCESS.forEach(option=>{permissions[option[0]]=role.modules.includes(option[1])});
+   const location=role.level==='Restaurant'?S.locations.find(item=>item.id==='loc-demo-store'):
+    S.locations.find(item=>item.id===(role.level==='Corporate'?'loc-home-office':'loc-southeast'));
+   const user={id:nid(),first:'Demo',last:role.name,name:'Demo '+role.name,email:'',phone:'',role:role.name,level:role.level,locationId:location.id,store:location.name,on:true,last:'Never',perms:permissions};
+   S.d.users.push(user);
+   S.actionItems.filter(action=>action.locationId==='loc-demo-store'&&action.status!=='Done').slice(0,2).forEach(action=>{action.ownerId=user.id;action.ownerName=user.name});
+   S.dailyLocationSelection[user.id]='loc-demo-store';
+   CURRENT_USER_ID=user.id;
+   acSnap=auditSnapshot();
+   syncRoles();
+   INSIGHTS_FILTER={store:'all',range:'30',from:'',to:''};
+   SC_FILTER={store:'',range:'30',from:'',to:'',ready:false,generated:null};
+   MVR_FILTER='all';ACTION_FILTER=null;AUD_VIEW={type:'',user:'',q:'',n:50};
+   PREV='home';EDIT=null;LOCATION_EDIT_ID=null;LOCATION_EXPANDED=new Set();LOCATION_TREE_INITIALIZED=false;LOCATION_ZOOM=1;
+   $('demoRole').textContent='Role: '+role.name;
+   banner.classList.remove('hidden');
+   setHomeUser(user);show('home');closeModal()
+  }catch(err){
+   console.error('Unable to start the demo environment:',err);
+   if(session){restoreSession();show('login')}
+   error.textContent='Unable to start the demo. Please try again.';
+  }finally{buttons.forEach(button=>button.disabled=false)}
+ }
+ function restoreSession(){
+  const previous=session;
+  sessionGeneration++;
+  S=previous.state;acSnap=previous.audit;CURRENT_USER_ID=previous.userId;
+  INSIGHTS_FILTER=previous.insights;SC_FILTER=previous.scorecard;MVR_FILTER=previous.mvr;ACTION_FILTER=previous.action;AUD_VIEW=previous.auditView;
+  Object.assign(UMS,previous.userManagement);
+  PREV=previous.previousView;EDIT=previous.edit;LOCATION_EDIT_ID=previous.locationEdit;
+  LOCATION_EXPANDED=previous.locationExpanded;LOCATION_TREE_INITIALIZED=previous.locationInitialized;LOCATION_ZOOM=previous.locationZoom;
+  if(LOCATION_CHART_RESIZE){LOCATION_CHART_RESIZE.disconnect();LOCATION_CHART_RESIZE=null}
+  session=null;syncRoles();banner.classList.add('hidden')
+ }
+ function exitDemo(){
+  if(!session)return;
+  restoreSession();
+  CURRENT_USER_ID=null;
+  $('adm').classList.add('hidden');
+  show('login');
+  $('exploreDemo').focus()
+ }
+ $('out').addEventListener('click',event=>{
+  if(session){event.preventDefault();event.stopImmediatePropagation();exitDemo()}
+ },true);
+ $('exploreDemo').addEventListener('click',event=>{
+  if(backdrop)return;
+  opener=event.currentTarget;
+  const error=h('div',{class:'demo-error',role:'alert'}),
+   buttons=[],
+   cards=roles.map(role=>{
+    const button=h('button',{class:'btn alt',type:'button',text:'Enter as '+role.name,onclick:()=>launch(role,error,buttons)});
+    buttons.push(button);
+    return h('section',{class:'demo-role'},h('h3',{text:role.name}),h('p',{text:role.description}),button)
+   }),
+   close=h('button',{class:'btn alt',type:'button',text:'Close',onclick:closeModal});
+  backdrop=h('div',{class:'disc-back',onclick:e=>{if(e.target===backdrop)closeModal()}},
+   h('div',{class:'disc-modal demo-modal',role:'dialog','aria-modal':'true','aria-labelledby':'demoTitle','aria-describedby':'demoSubtitle'},
+    h('h2',{id:'demoTitle',text:'Explore Shift Hero'}),
+    h('p',{id:'demoSubtitle',class:'demo-subtitle',text:'Experience Shift Hero from the perspective of different restaurant leadership roles.'}),
+    h('p',{class:'demo-subtitle',text:'Demo data is separate from your saved data. Changes are discarded when you exit or refresh.'}),
+    h('div',{class:'demo-cards'},cards),error,h('div',{class:'disc-btns'},close)));
+  document.body.append(backdrop);document.addEventListener('keydown',modalKey,true);buttons[0].focus()
+ });
+})();
 
 (()=>{
  const VERSION='1.0',TEXT=[
