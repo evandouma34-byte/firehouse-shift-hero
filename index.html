@@ -110,7 +110,7 @@ button.priority-count:active{background:#f0ece4}
 .daily-progress-item.needed{font-weight:700}.daily-progress-item.needed small{color:var(--red);font-weight:700}
 .daily-progress-item[role=button],.action-link{cursor:pointer;min-height:44px}
 .daily-progress-item[role=button]:hover{background:#fff}
-.action-link{border-left:4px solid #999;padding-left:10px}.action-link.critical{border-left-color:#c8102e}.action-link.high{border-left-color:#e8820c}.action-link.medium{border-left-color:#e6b800}
+.action-link{border-left:4px solid #999;padding-left:10px}.action-link.critical{border-left-color:#c8102e}.action-link.high{border-left-color:#e8820c}.action-link.medium{border-left-color:#e6b800}.action-link.low{border-left-color:#2f6fb0}
 .all-clear{color:#2e7d32;font-weight:700}
 .date-tools{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
 .date-tools.not-today .daily-progress-date-picker input{border-color:#e8820c;background:#fff4e0}
@@ -120,7 +120,7 @@ button.priority-count:active{background:#f0ece4}
 .walk-prio{margin-left:auto;font-size:12px;color:#777;white-space:nowrap}.walk-task-main.done .walk-prio{display:none}
 .action-quick{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .action-quick .btn{width:auto;min-height:44px}.action-quick select{min-height:44px}
-.action-row.critical{border-left:4px solid #c8102e;padding-left:10px}.action-row.high{border-left:4px solid #e8820c;padding-left:10px}.action-row.medium{border-left:4px solid #e6b800;padding-left:10px}
+.action-row.critical{border-left:4px solid #c8102e;padding-left:10px}.action-row.high{border-left:4px solid #e8820c;padding-left:10px}.action-row.medium{border-left:4px solid #e6b800;padding-left:10px}.action-row.low{border-left:4px solid #2f6fb0;padding-left:10px}
 .action-done summary{cursor:pointer;font:700 20px var(--serif);color:var(--red)}
 .temp-warn{border-color:#e8820c!important;background:#fff4e0!important}
 .sc-report{max-width:960px;margin:0 auto}
@@ -196,7 +196,8 @@ button.priority-count:active{background:#f0ece4}
 .action-row .priority-status.critical{background:#fbe3e6;color:#9d0c24}
 .action-row .priority-status.high{background:#fdebd3;color:#a35a00}
 .action-row .priority-status.medium{background:#fbf2c4;color:#7a6200}
-.priority-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:10px}
+.action-row .priority-status.low{background:#e5f0fa;color:#245785}
+.priority-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:10px}
 .priority-count{display:grid;justify-items:center;gap:2px;padding:12px;border:1px solid #eee;border-top:5px solid #999;border-radius:12px;background:#faf9f6}
 .priority-count b{font:700 32px/1 var(--serif);color:#222}
 .priority-count span{font-size:15px;font-weight:700;color:#444}
@@ -214,6 +215,8 @@ button.priority-count:active{background:#f0ece4}
 .priority-count.critical{border-top-color:#c8102e}
 .priority-count.high{border-top-color:#e8820c}
 .priority-count.medium{border-top-color:#e6b800}
+.priority-count.low{border-top-color:#2f6fb0}
+@media(max-width:700px){.priority-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.priority-item{grid-template-columns:1fr}}
 .tile{display:flex;align-items:center;gap:16px;background:var(--red);color:#fff;border:0;border-radius:60px;padding:12px 24px 12px 14px;cursor:pointer;text-align:left;min-height:68px;box-shadow:0 4px 10px rgba(0,0,0,.18);transition:background .15s}
 .tile:hover{background:#c80e17}.tile:active{background:var(--dred);transform:translateY(1px)}
@@ -248,6 +251,10 @@ td{padding:12px 14px;border-bottom:1px solid #eee}
 .walk-inline-field{flex:1;min-width:0}
 .walk-inline-actions{display:flex;gap:8px;flex:0 0 auto}
 .walk-inline-actions .btn{width:auto;flex:0 0 auto;padding:10px 14px;font-size:14px;border-radius:12px;white-space:nowrap}
+.walk-config-list{grid-template-columns:1fr}
+.walk-config-row{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,2fr) minmax(130px,1fr) minmax(130px,1fr) auto;align-items:end;gap:10px;min-width:0}
+@media(max-width:1000px){.walk-config-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.walk-config-row{grid-template-columns:1fr}}
 .walk-inline-error{grid-column:1/-1}
 @media(max-width:700px){.frm{grid-template-columns:1fr}}
 .tile.dark{background:#111}.tile.dark:hover{background:#2a2a2a}.tile.dark .ico svg{stroke:#111}
@@ -333,6 +340,7 @@ header .ttl small{display:block;font-size:clamp(12px,1.4vw,16px);color:#ffd36b;m
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
 .pc{display:flex;flex-direction:column;gap:6px;background:#f4f2ee;border-radius:14px;padding:12px}.pc b{font-family:var(--serif)}
 .pc select,.frm select,.panel select{height:46px;border:2px solid #e0dcd2;background:#fff;border-radius:12px;padding:0 10px;font:inherit;font-size:16px}
+#ec .walk-config-row select{height:56px}
 .frm textarea,.panel textarea{width:100%;min-height:90px;border:2px solid #e0dcd2;background:#f4f2ee;border-radius:16px;padding:12px 16px;font:inherit;font-size:17px;outline:0;resize:vertical}
 .logrow{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #eee}.logrow p{margin:4px 0 0}.logrow small{color:#666}
 .qrow{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid #eee;font-size:17px;flex-wrap:wrap}
@@ -940,8 +948,9 @@ TEMP_MODULES.forEach(module=>{
 });
 if(temperatureDefinitionsMigrated)save();
 if(!Array.isArray(S.foodOrderDefinitions)){S.foodOrderDefinitions=[];save()}
-const PRIORITY_LEVELS={critical:['🔴','Critical'],high:['🟠','High'],medium:['🟡','Medium']},
- PRIORITY_ORDER=['critical','high','medium'],
+const PRIORITY_LEVELS={critical:['🔴','Critical'],high:['🟠','High'],medium:['🟡','Medium'],low:['🔵','Low']},
+ PRIORITY_ORDER=['critical','high','medium','low'],
+ PRIORITY_DUE_DEFAULTS={critical:1,high:3,medium:7,low:14},
  ACTION_MAPPING=[
   [/bath\s?room|restroom/i,'Clean and restock bathrooms'],
   [/\btea\b/i,'Brew tea and verify stock'],
@@ -951,8 +960,20 @@ const PRIORITY_LEVELS={critical:['🔴','Critical'],high:['🟠','High'],medium:
 let actionDataMigrated=false;
 if(!Array.isArray(S.actionItems)){S.actionItems=[];actionDataMigrated=true}
 if(!S.walkthroughPriorities||typeof S.walkthroughPriorities!=='object'||Array.isArray(S.walkthroughPriorities)){S.walkthroughPriorities={};actionDataMigrated=true}
+function validDueDays(value,baseDate=new Date()){
+ if(!Number.isSafeInteger(value)||value<0)return false;
+ const date=new Date(baseDate);date.setDate(date.getDate()+value);
+ return Number.isFinite(date.getTime())&&date.getFullYear()<=9999
+}
+(S.walkthroughItems.categories||[]).forEach(category=>(Array.isArray(category.items)?category.items:[]).forEach(item=>{
+ if(!PRIORITY_ORDER.includes(item.priority)){
+  item.priority=PRIORITY_ORDER.includes(S.walkthroughPriorities[item.id])?S.walkthroughPriorities[item.id]:'medium';
+  actionDataMigrated=true
+ }
+ if(!validDueDays(item.defaultDueDays)){item.defaultDueDays=PRIORITY_DUE_DEFAULTS[item.priority];actionDataMigrated=true}
+}));
 if(actionDataMigrated)save();
-function walkthroughPriority(itemId){const level=S.walkthroughPriorities[itemId];return PRIORITY_ORDER.includes(level)?level:'medium'}
+function walkthroughPriority(item){return PRIORITY_ORDER.includes(item.priority)?item.priority:PRIORITY_ORDER.includes(S.walkthroughPriorities[item.id])?S.walkthroughPriorities[item.id]:'medium'}
 function actionForWalkthroughItem(categoryName,itemText){
  const match=ACTION_MAPPING.find(([pattern])=>pattern.test(itemText)||pattern.test(categoryName));
  return match?match[1]:'Complete: '+itemText
@@ -965,7 +986,7 @@ function generateWalkthroughActions(module,status,dateKey,location){
   const key=[dateKey,locationId,module,item.id].join('|');
   if(S.actionItems.some(action=>action.key===key))return;
   const action={id:'action-'+nid(),key,module,itemId:item.id,date:dateKey,locationId,title:item.text,category:category.name,
-   description:actionForWalkthroughItem(category.name,item.text),level:walkthroughPriority(item.id),status:'Open',created:Date.now()};
+   description:actionForWalkthroughItem(category.name,item.text),level:walkthroughPriority(item),defaultDueDays:validDueDays(item.defaultDueDays)?item.defaultDueDays:7,status:'Open',created:Date.now()};
   action.priority=action.level;action.createdDate=dateKey;action.sourceWalkthroughId=[dateKey,locationId,module].join('|');
   S.actionItems.push(action);added.push(action)
  }));
@@ -1022,7 +1043,7 @@ function renderTodaysPriorities(user){
    .sort((a,b)=>PRIORITY_ORDER.indexOf(a.level)-PRIORITY_ORDER.indexOf(b.level)||a.created-b.created),
   shown=open.slice(0,5),
   groups=PRIORITY_ORDER.map(level=>[level,shown.filter(action=>(PRIORITY_LEVELS[action.level]?action.level:'medium')===level)]).filter(group=>group[1].length),
-  titles={critical:'Critical Actions',high:'High Priority Actions',medium:'Medium Priority Actions'};
+  titles={critical:'Critical Actions',high:'High Priority Actions',medium:'Medium Priority Actions',low:'Low Priority Actions'};
  root.replaceChildren(...[
   groups.length?h('div',{class:'daily-progress-list'},groups.map(([level,actions])=>h('section',{class:'daily-progress-group'},h('h4',{text:PRIORITY_LEVELS[level][0]+' '+titles[level]}),
    actions.map(action=>h('div',{class:'daily-progress-item action-link '+level,role:'button',tabindex:'0',onclick:()=>openActionItems(user,null),onkeydown:event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openActionItems(user,null)}}},h('span',{text:action.description}),h('small',{text:action.status==='In Progress'?'In Progress':action.category})))))):h('p',{class:'daily-progress-empty all-clear',text:'✅ No open actions. Items missed in a walkthrough appear here.'}),
@@ -1030,7 +1051,7 @@ function renderTodaysPriorities(user){
   h('div',{class:'btns left'},h('button',{class:'btn priority-view-btn',type:'button',text:'View All',onclick:()=>openActionItems(user)}))
  ].filter(Boolean))
 }
-const READINESS_PENALTY={critical:10,high:5,medium:2};
+const READINESS_PENALTY={critical:10,high:5,medium:2,low:1};
 function readinessForUser(user){
  const location=selectedDailyLocation(user),locationId=location&&location.id||'default',
   open=S.actionItems.filter(action=>action.locationId===locationId&&action.status!=='Done'),
@@ -1059,7 +1080,7 @@ function renderPriorityPanel(user){
   h('div',{class:'readiness '+readiness.state[0],role:'group','aria-label':'Restaurant readiness '+readiness.score+' percent, '+readiness.state[2]},
    h('div',{class:'readiness-score'},h('h4',{text:'Restaurant Readiness'}),h('b',{text:readiness.score+'%'})),
    h('div',null,h('div',{class:'readiness-state',text:readiness.state[1]+' '+readiness.state[2]}),
-    activeParts.length?h('div',{class:'readiness-parts',title:'Critical −10, High −5, Medium −2 per open action item'},activeParts.map(part=>h('span',{text:PRIORITY_LEVELS[part.level][0]+' '+PRIORITY_LEVELS[part.level][1]+': '+part.count+' open (−'+part.penalty+')'}))):null,
+    activeParts.length?h('div',{class:'readiness-parts',title:'Critical −10, High −5, Medium −2, Low −1 per open action item'},activeParts.map(part=>h('span',{text:PRIORITY_LEVELS[part.level][0]+' '+PRIORITY_LEVELS[part.level][1]+': '+part.count+' open (−'+part.penalty+')'}))):null,
     logs.length&&logsDone<logs.length?h('div',{class:'readiness-note',text:'Based on open action items only · '+logsDone+' of '+logs.length+' logs done today'}):null)))
 }
 function managerDefinitions(module){return module==='mvr'?S.mvrDefinitions:module==='food_order'?S.foodOrderDefinitions:module.indexOf('temp_')===0?S.temperatureDefinitions[module]:S.checklistDefinitions[module]}
@@ -1151,7 +1172,7 @@ function openDashboardOption(module){
        taskLabel.classList.toggle('done',event.target.checked);
        persistWalkthroughUpdate()
      }});
-     taskLabel.append(taskCheckbox,h('span',{text:item.text}),h('small',{class:'walk-prio '+walkthroughPriority(item.id),text:PRIORITY_LEVELS[walkthroughPriority(item.id)][0]+' '+PRIORITY_LEVELS[walkthroughPriority(item.id)][1]}));
+     taskLabel.append(taskCheckbox,h('span',{text:item.text}),h('small',{class:'walk-prio '+walkthroughPriority(item),text:PRIORITY_LEVELS[walkthroughPriority(item)][0]+' '+PRIORITY_LEVELS[walkthroughPriority(item)][1]}));
      return h('div',{class:'walk-task-row'},taskLabel,h('div',{class:'walk-task-details'},noteSection,photoSection))
     }):empty('No items in this category yet. Add items in the Admin Portal.'))):
     [empty('No walkthrough categories or items yet. Add them in the Admin Portal.')];
@@ -1261,39 +1282,15 @@ function renderAdmin(){
    ...[['temp_morning','Morning'],['temp_midday','Mid-Day'],['temp_evening','Evening']].map(([module,name])=>makeTile('Manage '+name+' Temperature Log Items','Add and organize categories and temperature items','thermometer',()=>openChecklistManager(module))),
    makeTile('Manage Food Order Items','Add and organize categories and food order items','clipboard',()=>openChecklistManager('food_order')),
    makeTile('Management Visit Item Manager','Add and organize review points for each Management Visit category','clipboard',()=>openChecklistManager('mvr'))
-  ],
-  taskTools=[
-   makeTile('Walkthrough Item Priorities','Set the priority of action items created when a walkthrough item is missed','clipboard',openWalkthroughPriorities)
   ];
  g.className='admin-groups';
  g.replaceChildren(
   panel('FRUM',h('div',{class:'grid'},userTools)),
-  panel('Content Management',h('div',{class:'grid'},contentTools)),
-  panel('Action Manager',h('div',{class:'grid'},taskTools))
+  panel('Content Management',h('div',{class:'grid'},contentTools))
  )
 }
 let EDIT=null;
 function openEdit(k){const m=MK[k];EDIT={k,id:null};$('et').textContent='Edit: '+m.name;$('ed').textContent=m.desc+' Changes show up on the dashboard page right away.';drawEdit();show('edit')}
-function openWalkthroughPriorities(){
- if(!isSystemAdministrator()){t('System Administrator access is required.');show('home');return}
- $('et').textContent='Walkthrough Item Priorities';
- $('ed').textContent='Choose the priority of the action item created when a walkthrough item is not completed. Priorities decide how action items are sorted on the dashboard.';
- const categories=S.walkthroughItems.categories||[];
- $('ec').replaceChildren(...(categories.length?categories.map(category=>panel(category.name,
-  (category.items||[]).length?category.items.map(item=>{
-   const select=sel(PRIORITY_ORDER,walkthroughPriority(item.id));
-   [...select.options].forEach(option=>option.textContent=PRIORITY_LEVELS[option.value][0]+' '+PRIORITY_LEVELS[option.value][1]);
-   select.setAttribute('aria-label','Priority for '+item.text);
-   select.onchange=()=>{
-    const previous=S.walkthroughPriorities[item.id];
-    S.walkthroughPriorities[item.id]=select.value;
-    if(!save()){if(previous===undefined)delete S.walkthroughPriorities[item.id];else S.walkthroughPriorities[item.id]=previous;select.value=walkthroughPriority(item.id);t('Unable to save the priority. Browser storage may be full.');return}
-    t('Priority saved.')
-   };
-   return h('div',{class:'frm walk-item-row'},field(item.text,select))
-  }):empty('No items in this category yet.'))):[panel('Walkthrough Priorities',empty('No walkthrough items yet. Add items in Manage Walkthrough Items.'))]));
- show('edit')
-}
 function openWalkthroughManager(){
  if(!isSystemAdministrator()){t('System Administrator access is required.');show('home');return}
  $('et').textContent='Manage Walkthrough Items';
@@ -1304,6 +1301,18 @@ function drawWalkthroughManager(){
  const container=$('ec'),categories=S.walkthroughItems.categories,
   categoryName=h('input',{type:'text',placeholder:'Category name'}),
   categoryError=h('div',{class:'err'});
+ function priorityInput(value,label){
+  const select=sel(PRIORITY_ORDER,value);
+  [...select.options].forEach(option=>{option.textContent=PRIORITY_LEVELS[option.value][1]});
+  select.setAttribute('aria-label',label);
+  return select
+ }
+ function dueInput(value,label){return h('input',{type:'number',min:'0',step:'1',inputmode:'numeric',value,'aria-label':label})}
+ function dueDays(input,error){
+  const value=input.value.trim(),days=Number(value);
+  if(!value||!validDueDays(days)){error.textContent='Enter a valid whole number of due days (0 or more).';return null}
+  return days
+ }
  function uniqueName(value,entries,except){
   return entries.every(entry=>entry===except||entry.name.trim().toLowerCase()!==value.toLowerCase())
  }
@@ -1319,14 +1328,20 @@ function drawWalkthroughManager(){
    renameError=h('div',{class:'err'});
   const itemRows=category.items.map(item=>{
    const itemInput=h('input',{type:'text',value:item.text,'aria-label':'Walkthrough item'}),
+    priority=priorityInput(walkthroughPriority(item),'Priority for '+item.text),
+    due=dueInput(validDueDays(item.defaultDueDays)?item.defaultDueDays:7,'Default due days for '+item.text),
     itemError=h('div',{class:'err'});
    return h('div',{class:'frm walk-item-row'},
-    h('div',{class:'walk-inline-row'},h('div',{class:'walk-inline-field'},field('Item',itemInput)),h('div',{class:'walk-inline-actions'},
+    h('div',{class:'walk-config-row'},field('Item',itemInput),field('Priority',priority),field('Default Due Days',due),h('div',{class:'walk-inline-actions'},
     h('button',{class:'btn alt',text:'Save',title:'Save item',onclick:()=>{
-     const text=itemInput.value.trim();
+     const text=itemInput.value.trim(),days=dueDays(due,itemError);
      if(!text){itemError.textContent='Enter an item name.';return}
      if(category.items.some(other=>other!==item&&other.text.trim().toLowerCase()===text.toLowerCase())){itemError.textContent='An item with that name already exists in this category.';return}
-     item.text=text;save();drawWalkthroughManager();t('Item updated.')
+     if(days===null)return;
+     const previous={text:item.text,priority:item.priority,defaultDueDays:item.defaultDueDays};
+     Object.assign(item,{text,priority:priority.value,defaultDueDays:days});
+     if(!save()){Object.assign(item,previous);itemError.textContent='Unable to save the item. Browser storage may be full.';return}
+     drawWalkthroughManager();t('Item updated.')
     }}),
     h('button',{class:'btn alt',text:'Delete',title:'Delete item',onclick:()=>{
      if(!window.confirm('Delete the walkthrough item "'+item.text+'"?'))return;
@@ -1334,6 +1349,8 @@ function drawWalkthroughManager(){
     }}))),itemError)
   });
   const newItem=h('input',{type:'text',placeholder:'New item name'}),
+   newPriority=priorityInput('medium','Priority for new item in '+category.name),
+   newDue=dueInput(7,'Default due days for new item in '+category.name),
    newItemError=h('div',{class:'err'});
   return panel(category.name,
    h('div',{class:'frm'},
@@ -1348,17 +1365,21 @@ function drawWalkthroughManager(){
      if(!window.confirm('Delete the "'+category.name+'" category and all of its items?'))return;
      categories.splice(categories.indexOf(category),1);save();drawWalkthroughManager();t('Category deleted.')
     }}))),renameError),
-   category.items.length?h('div',{class:'frm'},itemRows):empty('No items in this category yet.'),
-   h('div',{class:'frm'},h('div',{class:'walk-inline-row'},h('div',{class:'walk-inline-field'},field('Add walkthrough item',newItem)),h('div',{class:'walk-inline-actions'},h('button',{class:'btn',text:'Add',title:'Add walkthrough item',onclick:()=>{
-    const text=newItem.value.trim();
+   category.items.length?h('div',{class:'frm walk-config-list'},itemRows):empty('No items in this category yet.'),
+   h('div',{class:'frm'},h('div',{class:'walk-config-row'},field('Add walkthrough item',newItem),field('Priority',newPriority),field('Default Due Days',newDue),h('div',{class:'walk-inline-actions'},h('button',{class:'btn',text:'Add',title:'Add walkthrough item',onclick:()=>{
+    const text=newItem.value.trim(),days=dueDays(newDue,newItemError);
     if(!text){newItemError.textContent='Enter an item name.';return}
     if(category.items.some(item=>item.text.trim().toLowerCase()===text.toLowerCase())){newItemError.textContent='An item with that name already exists in this category.';return}
-    category.items.push({id:'walk-item-'+nid(),text});save();drawWalkthroughManager();t('Item added.')
+    if(days===null)return;
+    const item={id:'walk-item-'+nid(),text,priority:newPriority.value,defaultDueDays:days};
+    category.items.push(item);
+    if(!save()){category.items.pop();newItemError.textContent='Unable to add the item. Browser storage may be full.';return}
+    drawWalkthroughManager();t('Item added.')
    }}))),newItemError)
   )
  });
  container.replaceChildren(
-  panel('Shared Walkthrough Categories',empty('Categories and items are shared by Morning and Evening Manager Walkthroughs. Completion is tracked separately for each walkthrough, date, and location.'),h('div',{class:'walk-category-list'},cards.length?cards:empty('No walkthrough categories yet. Add a category below.'))),
+  panel('Shared Walkthrough Categories',empty('Categories and items are shared by Morning and Evening Manager Walkthroughs. Completion is tracked separately for each walkthrough, date, and location. Priority and default due days apply to new actions created from missed items.'),h('div',{class:'walk-category-list'},cards.length?cards:empty('No walkthrough categories yet. Add a category below.'))),
   panel('Add Category',h('div',{class:'frm'},h('div',{class:'walk-inline-row'},h('div',{class:'walk-inline-field'},field('Category name',categoryName)),h('div',{class:'walk-inline-actions'},h('button',{class:'btn',text:'Add',title:'Add category',onclick:addCategory}))),categoryError))
  )
 }
@@ -1924,7 +1945,7 @@ function drawInsights(user){
    if(!dailyOptionComplete(option,status))return;
    const checks=status.walkthroughItems&&status.walkthroughItems[option[1]]||{};
    (S.walkthroughItems.categories||[]).forEach(category=>(category.items||[]).forEach(item=>{
-    if(checks[item.id]!==true)findings.push({name:item.text,category:category.name,day,level:walkthroughPriority(item.id)})
+    if(checks[item.id]!==true)findings.push({name:item.text,category:category.name,day,level:walkthroughPriority(item)})
    }))
   })
  }));
@@ -1960,7 +1981,7 @@ function drawInsights(user){
    card('Walkthrough Completion',completion(walkMods)),card('Checklist Completion',completion(checkMods)),card('Temperature Log Completion',completion(tempMods)),
    card('Action Resolution',actions.length?Math.round(doneActions.length/actions.length*100)+'%':'—'),card('Average Readiness',avgReadiness))),
   panel('Recurring Findings',common.length?[h('p',{class:'note',text:'Most common issues'},),...rows(common.slice(0,10),entry=>entry.count+' Finding'+(entry.count===1?'':'s'))]:empty('No walkthrough findings in this period.')),
-  panel('Critical Findings',critical.length?[h('p',{class:'note',text:'Most frequently flagged critical issues'}),...rows(critical.slice(0,10),entry=>entry.count+' Critical Finding'+(entry.count===1?'':'s')+' · Last '+insightsParse(entry.last).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}))]:empty('No critical findings in this period. Set item priorities in Admin Portal › Action Manager.')),
+  panel('Critical Findings',critical.length?[h('p',{class:'note',text:'Most frequently flagged critical issues'}),...rows(critical.slice(0,10),entry=>entry.count+' Critical Finding'+(entry.count===1?'':'s')+' · Last '+insightsParse(entry.last).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}))]:empty('No critical findings in this period. Set item priorities in Admin Portal › Manage Walkthrough Items.')),
   panel('Action Plan Performance',h('div',{class:'ins-grid'},
    card('Total Actions Created',String(actions.length)),card('Completed Actions',String(doneActions.length)),card('Open Actions',String(actions.length-doneActions.length)),
    card('Action Completion Rate',actions.length?Math.round(doneActions.length/actions.length*100)+'%':'—'),card('Avg Resolution Time',avgResolution))),
@@ -2421,7 +2442,10 @@ function populateDemoData(passwordHash){
      ];
      const levels=['critical','high','high','medium','medium','medium','high','medium'];
      let priorityIndex=0;
-     S.walkthroughItems.categories.forEach(category=>category.items.forEach(item=>{S.walkthroughPriorities[item.id]=levels[priorityIndex++]}))
+     S.walkthroughItems.categories.forEach(category=>category.items.forEach(item=>{
+      item.priority=levels[priorityIndex++];item.defaultDueDays=PRIORITY_DUE_DEFAULTS[item.priority];
+      S.walkthroughPriorities[item.id]=item.priority
+     }))
     }
     ['check_opening','check_midday','check_closing'].forEach((module,index)=>{
      if(!S.checklistDefinitions[module].length)S.checklistDefinitions[module]=[make('check',['Opening','Mid-Day','Closing'][index]+' Tasks',[['Unlock and turn on equipment','Check the cash drawer','Stock the line'],['Restock the line','Wipe down stations','Check the dining room'],['Clean the equipment','Take out the trash','Lock up and set the alarm']][index])]
@@ -2601,11 +2625,14 @@ save=function(){
 };
 
 /* ----- Action ownership, due dates and escalation ----- */
-const AC_SLA={critical:1,high:3,medium:7},ACTION_STAGES=['Open','Assigned','In Progress','Completed','Verified'];
+const AC_SLA=PRIORITY_DUE_DEFAULTS,ACTION_STAGES=['Open','Assigned','In Progress','Completed','Verified'];
 const acDayNum=key=>{const [y,m,d]=key.split('-').map(Number);return Date.UTC(y,m-1,d)/864e5};
 const acAddDays=(key,n)=>{const d=insightsParse(key);d.setDate(d.getDate()+n);return insightsKey(d)};
 function actionDue(a){
  if(/^\d{4}-\d{2}-\d{2}$/.test(a.dueDate||''))return {date:a.dueDate,custom:true};
+ if(Number.isFinite(a.created)&&validDueDays(a.defaultDueDays,new Date(a.created))){
+  return {date:acAddDays(insightsKey(new Date(a.created)),a.defaultDueDays),custom:false}
+ }
  const base=/^\d{4}-\d{2}-\d{2}$/.test(a.date||'')?a.date:insightsKey(new Date(a.created||Date.now()));
  return {date:acAddDays(base,AC_SLA[a.level]!==undefined?AC_SLA[a.level]:AC_SLA.medium),custom:false}
 }
@@ -2888,7 +2915,7 @@ function scOpenDrill(label,key,ctx){
    check:['Opening, Mid-Day and Closing Checklists submitted from the dashboard.','Completed checklists ÷ expected checklists (each checklist × each day × each store in the range).',cur.check],
    temp:['Temperature Logs entered from the dashboard.','In-range readings ÷ all recorded numeric readings, using each item\'s acceptable limits.',cur.temp],
    action:['Action Center items dated within the range.','Closed actions ÷ actions created in the range. Average resolution time uses created-to-completed time of closed actions.',cur.action],
-   ready:['Open Action Center items on each day a store submitted any daily form.','For each submitted day: 100 minus open-action penalties (Critical 10, High 5, Medium 2), floored at 0. The result is the average of those days. Other figures below are context, not inputs.',cur.ready],
+   ready:['Open Action Center items on each day a store submitted any daily form.','For each submitted day: 100 minus open-action penalties (Critical 10, High 5, Medium 2, Low 1), floored at 0. The result is the average of those days. Other figures below are context, not inputs.',cur.ready],
    mvr:['Completed Management Visit Reviews dated within the range.','Average of overall scores for completed visits in the range. Trend compares the latest visit with the visit before it.',cur.mvr],
    critical:['Action Center items with Critical priority that are not closed.','Count of unresolved Critical actions dated on or before the end of the range.',null],
    overall:['The six weighted components of this scorecard.','Weighted average of available components (Walkthrough 20, Checklist 20, Temperature 15, Action Plan 15, Readiness 15, MVR 15). Components with no data are dropped and remaining weights renormalized.',cur.score]
