@@ -49,12 +49,19 @@ const DASHBOARD_ACCESS=[
  ['dash_insights','insights','Operational Insights','Review recurring issues, trends, and improvement opportunities.','ops'],
  ['dash_commentary','commentary','Manager Commentary','Add and edit scorecard commentary and business review notes.','rep'],
  ['dash_scorecard','scorecard','Performance Scorecard','Generate a printable restaurant performance business review.','ops'],
- ['dash_mvr','mvr','Management Visits','Complete and review Management Visitation Reports.','ops']
+ ['dash_mvr','mvr','Management Visits','Complete and review Management Visitation Reports.','ops'],
+ ['dash_verify_actions','verify_actions','Verify Completed Action Items','Verify completed action items for assigned stores.','admin'],
+ ['dash_store_overview','store_overview','Multi-Store Overview','Review the operational overview for assigned stores.','ops'],
+ ['dash_temp_exceptions','temp_exceptions','Temperature Exceptions','Review temperature exceptions for assigned stores.','ops']
 ];
 const HOME_PERMISSION_BY_MODULE={};DASHBOARD_ACCESS.forEach(option=>HOME_PERMISSION_BY_MODULE[option[1]]=option[0]);
 function hasDashboardPermission(user,module){
  const option=DASHBOARD_ACCESS.find(item=>item[1]===module),permissions=user&&user.perms;
- if(!option||!permissions)return false;
+ if(!option)return false;
+ if(module==='verify_actions'&&(!permissions||typeof permissions[option[0]]!=='boolean'))return hasAdminPortalAccess(user);
+ if(module==='store_overview'&&(!permissions||typeof permissions[option[0]]!=='boolean'))return hasDashboardPermission(user,'insights');
+ if(module==='temp_exceptions'&&(!permissions||typeof permissions[option[0]]!=='boolean'))return ['temp_morning','temp_midday','temp_evening','food_order'].some(key=>hasDashboardPermission(user,key));
+ if(!permissions)return false;
  return typeof permissions[option[0]]==='boolean'?permissions[option[0]]:!!permissions[option[4]];
 }
 function walkthroughItemsFor(module){
@@ -144,10 +151,41 @@ function dailyStatusForUser(user){
  S.dailyStatus=S.dailyStatus||{};
  return S.dailyStatus[scope]||(S.dailyStatus[scope]={})
 }
+function submissionDefinitions(module){
+ if(module.indexOf('walk_')===0)return S.walkthroughItems.categories||[];
+ if(module.indexOf('check_')===0)return S.checklistDefinitions[module]||[];
+ if(TEMP_MODULES.includes(module))return temperatureItemsFor(module);
+ if(module==='food_order')return S.foodOrderDefinitions||[];
+ return []
+}
+function submissionSnapshot(module,status,user,explanation,at){
+ const relevant={};
+ const keys=module.indexOf('walk_')===0?['walkthroughItems','walkthroughDetails']:module.indexOf('check_')===0?['checklistItems']:TEMP_MODULES.includes(module)?['temperatureReadings','temperatureCorrections']:['foodOrderQuantities','foodOrderTemperatures'];
+ keys.forEach(key=>{
+  if(status[key]!==undefined)relevant[key]=key==='foodOrderQuantities'||key==='foodOrderTemperatures'?status[key]:{[module]:status[key][module]||{}}
+ });
+ return JSON.parse(JSON.stringify({version:1,definitions:submissionDefinitions(module),status:relevant,submittedAt:at,submittedBy:user.name||'',submittedById:user.id,explanation:explanation||''}))
+}
+function submittedData(status,module){
+ const snapshot=status.submissionSnapshots&&status.submissionSnapshots[module];
+ return snapshot?{status:snapshot.status,definitions:snapshot.definitions}:{status,definitions:submissionDefinitions(module)}
+}
+function incompleteSubmissionItems(module,status,definitions){
+ if(!/^(walk_|check_)/.test(module))return [];
+ const checks=module.indexOf('walk_')===0?(status.walkthroughItems&&status.walkthroughItems[module]||{}):(status.checklistItems&&status.checklistItems[module]||{});
+ return definitions.flatMap(category=>category.items||[]).filter(item=>checks[item.id]!==true)
+}
 function dailySubmissionPanel(module,user,kind){
  const option=DASHBOARD_ACCESS.find(item=>item[1]===module),status=dailyStatusForUser(user),
   submitted=dailyOptionComplete(option,status),
+  explanation=h('textarea',{class:'walk-task-note','aria-label':'Explanation for incomplete checklist items',placeholder:'Explain any incomplete checklist items'}),
   button=h('button',{class:'btn',text:submitted?option[2]+' Submitted':'Submit '+option[2],onclick:()=>{
+   if(module.indexOf('check_')===0){
+    const incomplete=incompleteSubmissionItems(module,status,submissionDefinitions(module));
+    if(incomplete.length&&!explanation.value.trim()){
+     error.textContent='Explain the incomplete checklist items before submitting: '+incomplete.map(item=>item.text).join(', ')+'.';explanation.focus();return
+    }
+   }
    if(TEMP_MODULES.includes(module)||module==='food_order'){
     const categories=module==='food_order'?S.foodOrderDefinitions:temperatureItemsFor(module),
      readings=module==='food_order'?status.foodOrderTemperatures:status.temperatureReadings&&status.temperatureReadings[module],
@@ -162,28 +200,35 @@ function dailySubmissionPanel(module,user,kind){
     }
     error.textContent=''
    }
+   const now=Date.now(),snapshot=submissionSnapshot(module,status,user,module.indexOf('check_')===0?explanation.value.trim():'',now);
    status.dailySubmissions=status.dailySubmissions||{};
    const previous=status.dailySubmissions[module],
     added=module.indexOf('walk_')===0?generateWalkthroughActions(module,status,selectedDailyDate(user),selectedDailyLocation(user)):[];
    status.dailySubmissions[module]=true;
    const previousTime=status.submittedAt&&status.submittedAt[module];
-   status.submittedAt=status.submittedAt||{};status.submittedAt[module]=Date.now();
+   status.submittedAt=status.submittedAt||{};status.submittedAt[module]=now;
+   status.submissionSnapshots=status.submissionSnapshots||{};
+   const previousSnapshot=status.submissionSnapshots[module];status.submissionSnapshots[module]=snapshot;
    if(!save()){
     if(previous===undefined)delete status.dailySubmissions[module];
     else status.dailySubmissions[module]=previous;
     if(previousTime===undefined)delete status.submittedAt[module];else status.submittedAt[module]=previousTime;
+    if(previousSnapshot===undefined)delete status.submissionSnapshots[module];else status.submissionSnapshots[module]=previousSnapshot;
     S.actionItems=S.actionItems.filter(action=>!added.includes(action));
     t('Unable to submit '+kind.toLowerCase()+'. Browser storage may be full.');return
    }
-    button.textContent=option[2]+' Submitted';button.disabled=true;note.textContent='Submitted and marked complete.';
-   renderDailyProgress(user);t(kind+' submitted and marked complete.'+(added.length?' '+added.length+' action item'+(added.length===1?'':'s')+' created.':''));
+    const outstanding=incompleteSubmissionItems(module,snapshot.status,snapshot.definitions).length;
+    button.textContent=option[2]+' Submitted';button.disabled=true;note.textContent=outstanding?'Submitted with '+outstanding+' outstanding item'+(outstanding===1?'':'s')+'.':'Submitted and marked complete.';
+   renderDailyProgress(user);t(kind+(outstanding?' submitted with outstanding items.':' submitted and marked complete.')+(added.length?' '+added.length+' action item'+(added.length===1?'':'s')+' created.':''));
    if(added.length&&hasDashboardPermission(user,'actions'))result.replaceChildren(h('button',{class:'btn alt sm2',type:'button',text:added.length+' action item'+(added.length===1?'':'s')+' created · View in Action Center ›',onclick:()=>openActionItems(user)}))
   }}),
   result=h('div',{class:'btns left'}),error=h('p',{class:'err',role:'alert',tabindex:'-1'}),
-  note=h('p',{class:'note',text:submitted?'Submitted and marked complete.':TEMP_MODULES.includes(module)||module==='food_order'?'Enter a temperature for every item before submitting.':'Submit to mark this complete.'});
+  savedSnapshot=status.submissionSnapshots&&status.submissionSnapshots[module],
+  savedOutstanding=submitted?incompleteSubmissionItems(module,savedSnapshot?savedSnapshot.status:status,savedSnapshot?savedSnapshot.definitions:submissionDefinitions(module)).length:0,
+  note=h('p',{class:'note',text:submitted?(savedOutstanding?'Submitted with '+savedOutstanding+' outstanding item'+(savedOutstanding===1?'':'s')+'.':'Submitted and marked complete.'):TEMP_MODULES.includes(module)||module==='food_order'?'Enter a temperature for every item before submitting.':'Submit to mark this complete.'});
  button.disabled=submitted;
  return panel('Submit '+kind,
-  note,error,button,result)
+  note,!submitted&&module.indexOf('check_')===0?field('Explanation for incomplete items (required if any are unchecked)',explanation):null,error,button,result)
 }
 function renderDailyProgress(user){
  renderPriorityPanel(user);
@@ -236,8 +281,10 @@ function renderDailyProgress(user){
   h('div',{class:'daily-progress-body'},
    groups.length?h('div',{class:'daily-progress-list'},groups.map(([title,options])=>h('section',{class:'daily-progress-group'},h('h4',{text:title}),   options.slice().sort((a,b)=>dailyOptionComplete(a,status)-dailyOptionComplete(b,status)).map(option=>{
     const complete=dailyOptionComplete(option,status),
+     snapshot=status.submissionSnapshots&&status.submissionSnapshots[option[1]],
+     outstanding=complete&&/^(walk_|check_)/.test(option[1])?incompleteSubmissionItems(option[1],snapshot?snapshot.status:status,snapshot?snapshot.definitions:submissionDefinitions(option[1])).length:0,
      open=()=>openDashboardOption(option[1]);
-    return h('div',{class:'daily-progress-item'+(complete?' done':' needed'),role:'button',tabindex:'0','aria-label':itemName(option)+(complete?' complete':' needed')+', open',onclick:open,onkeydown:event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();open()}}},h('span',{text:itemName(option)}),h('small',{text:complete?'Complete':'Needed ›'}))
+    return h('div',{class:'daily-progress-item'+(complete?' done':' needed'),role:'button',tabindex:'0','aria-label':itemName(option)+(complete?(outstanding?' submitted with '+outstanding+' outstanding':' submitted'):' needed')+', open',onclick:open,onkeydown:event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();open()}}},h('span',{text:itemName(option)}),h('small',{text:complete?(outstanding?'Submitted · '+outstanding+' outstanding':'Complete'):'Needed ›'}))
   })))):h('p',{class:'daily-progress-empty',text:'No checklists, walkthroughs, or temperature logs are assigned to your account.'}),
    h('div',{class:'daily-progress-chart-wrap'},h('div',{class:'daily-progress-chart',role:'img','aria-label':percent+' percent of assigned daily logs, checklists, and walkthroughs completed',style:'--completion:'+percent+'%'},h('span',{text:percent+'%'})),h('span',{class:'daily-progress-chart-label',text:'Daily Completion'}))
   ),
@@ -269,11 +316,13 @@ function drawEntriesPage(user,dateKey,storeId,record){
  if(record){
   const option=DASHBOARD_ACCESS.find(item=>item[1]===record.module),
    title=option?option[2]:'Submitted entry',
+   snapshot=record.status.submissionSnapshots&&record.status.submissionSnapshots[record.module],
+   entryStatus=snapshot?snapshot.status:record.status,
    body=[];
   if(record.module.indexOf('walk_')===0){
-   const status=record.status,checks=status.walkthroughItems&&status.walkthroughItems[record.module]||{},
+   const status=entryStatus,checks=status.walkthroughItems&&status.walkthroughItems[record.module]||{},
     details=status.walkthroughDetails&&status.walkthroughDetails[record.module]||{},
-    categories=S.walkthroughItems.categories||[];
+    categories=snapshot?snapshot.definitions:S.walkthroughItems.categories||[];
    if(categories.length){
     categories.forEach(category=>{
      const tasks=(category.items||[]).map(item=>{
@@ -286,8 +335,8 @@ function drawEntriesPage(user,dateKey,storeId,record){
     })
    }else body.push(empty('Walkthrough item definitions are no longer available, but this submission is recorded as complete.'))
   }else if(record.module.indexOf('check_')===0){
-   const checks=record.status.checklistItems&&record.status.checklistItems[record.module]||{},
-    categories=S.checklistDefinitions[record.module]||[];
+   const checks=entryStatus.checklistItems&&entryStatus.checklistItems[record.module]||{},
+    categories=snapshot?snapshot.definitions:S.checklistDefinitions[record.module]||[];
    if(categories.length){
     categories.forEach(category=>{
      const tasks=(category.items||[]).map(item=>h('div',{class:'entry-detail-item'},h('strong',{text:(checks[item.id]===true?'Complete: ':'Needed: ')+item.text})));
@@ -295,16 +344,16 @@ function drawEntriesPage(user,dateKey,storeId,record){
     })
    }else body.push(empty('No checklist items were configured when this checklist was submitted.'))
   }else if(TEMP_MODULES.includes(record.module)){
-   const readings=record.status.temperatureReadings&&record.status.temperatureReadings[record.module]||{},
-    categories=temperatureItemsFor(record.module);
+   const readings=entryStatus.temperatureReadings&&entryStatus.temperatureReadings[record.module]||{},
+    categories=snapshot?snapshot.definitions:temperatureItemsFor(record.module);
    if(categories.length){
     categories.forEach(category=>{
-     const tasks=(category.items||[]).map(item=>{const warn=tempFlag(item,readings[item.id]);return h('div',{class:'entry-detail-item'},h('strong',{text:item.text+': '+(readings[item.id]!==undefined?readings[item.id]+'°F':'Not recorded')}),warn?h('small',{class:'temp-flag',text:warn}):null,tempCorrectionSummary(record.status,record.module,item.id))});
+     const tasks=(category.items||[]).map(item=>{const warn=tempFlag(item,readings[item.id]);return h('div',{class:'entry-detail-item'},h('strong',{text:item.text+': '+(readings[item.id]!==undefined?readings[item.id]+'°F':'Not recorded')}),warn?h('small',{class:'temp-flag',text:warn}):null,tempCorrectionSummary(entryStatus,record.module,item.id))});
      body.push(panel(category.name,tasks.length?tasks:empty('No items in this category.')))
     })
    }else body.push(empty('No temperature log items were configured when this log was submitted.'))
   }else if(record.module==='food_order'){
-   const quantities=record.status.foodOrderQuantities||{},temperatures=record.status.foodOrderTemperatures||{},categories=S.foodOrderDefinitions||[];
+   const quantities=entryStatus.foodOrderQuantities||{},temperatures=entryStatus.foodOrderTemperatures||{},categories=snapshot?snapshot.definitions:S.foodOrderDefinitions||[];
    if(categories.length){
     categories.forEach(category=>{
      const tasks=(category.items||[]).map(item=>{
@@ -319,7 +368,7 @@ function drawEntriesPage(user,dateKey,storeId,record){
    const entryType=record.module==='food_order'?'food order':'temperature log';
    body.push(empty('This '+entryType+' was submitted and marked complete. Detailed entry fields are not available in this version.'))
   }
-  container.replaceChildren(filters,h('div',{class:'btns left'},h('button',{class:'btn alt',text:'Back to Entries',onclick:()=>drawEntriesPage(user,dateKey,storeId,null)})),panel(title,h('p',{class:'note',text:locationPath(S.locations.find(location=>location.id===record.storeId)||{name:record.storeId})+' · '+dateKey}),...body))
+  container.replaceChildren(filters,h('div',{class:'btns left'},h('button',{class:'btn alt',text:'Back to Entries',onclick:()=>drawEntriesPage(user,dateKey,storeId,null)})),panel(title,h('p',{class:'note',text:locationPath(S.locations.find(location=>location.id===record.storeId)||{name:record.storeId})+' · '+dateKey}),snapshot?h('p',{class:'note',text:'Submitted by '+(snapshot.submittedBy||'Unknown')+' · '+acFmtTime(snapshot.submittedAt)}):h('p',{class:'note',text:'Legacy entry: current item definitions are shown; the original definitions and submitter may not be available.'}),snapshot&&snapshot.explanation?h('p',{text:'Explanation for incomplete items: '+snapshot.explanation}):null,...body))
   return
  }
  if(!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)){
@@ -351,20 +400,20 @@ function drawEntriesPage(user,dateKey,storeId,record){
   panel('Submitted Entries · '+records.length,
    records.length?records.map(entry=>{
     const time=entry.status.submittedAt&&entry.status.submittedAt[entry.module],
-     m=entry.module,s=entry.status;
+     m=entry.module,snapshot=entry.status.submissionSnapshots&&entry.status.submissionSnapshots[m],s=snapshot?snapshot.status:entry.status;
     let note='';
     if(m.indexOf('walk_')===0||m.indexOf('check_')===0){
      const checks=m.indexOf('walk_')===0?(s.walkthroughItems&&s.walkthroughItems[m]||{}):(s.checklistItems&&s.checklistItems[m]||{}),
-      cats=m.indexOf('walk_')===0?(S.walkthroughItems.categories||[]):(S.checklistDefinitions[m]||[]),
+      cats=snapshot?snapshot.definitions:m.indexOf('walk_')===0?(S.walkthroughItems.categories||[]):(S.checklistDefinitions[m]||[]),
       all=cats.reduce((list,category)=>list.concat(category.items||[]),[]),missed=all.filter(item=>checks[item.id]!==true).length;
      note=all.length?(missed?missed+' item'+(missed===1?'':'s')+' needed':'All items done'):''
     }else if(TEMP_MODULES.includes(m)){
      const readings=s.temperatureReadings&&s.temperatureReadings[m]||{},
-      all=temperatureItemsFor(m).reduce((list,category)=>list.concat(category.items||[]),[]),
+      all=(snapshot?snapshot.definitions:temperatureItemsFor(m)).reduce((list,category)=>list.concat(category.items||[]),[]),
       bad=all.filter(item=>tempFlag(item,readings[item.id])).length;
      note=all.length?Object.keys(readings).length+' of '+all.length+' recorded'+(bad?' · '+bad+' out of range':''):''
     }
-    return h('button',{class:'entry-record',type:'button',onclick:()=>drawEntriesPage(user,dateKey,storeId,entry)},h('strong',{text:entry.title}),h('small',{text:['Complete',time?new Date(time).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'',note].filter(Boolean).join(' · ')+' ›'}))
+    return h('button',{class:'entry-record',type:'button',onclick:()=>drawEntriesPage(user,dateKey,storeId,entry)},h('strong',{text:entry.title}),h('small',{text:['Submitted',snapshot?'':'Legacy entry',time?new Date(time).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'',note].filter(Boolean).join(' · ')+' ›'}))
    }):empty('No submitted logs, checklists, or walkthroughs were found for this restaurant and date.')))
 }
 const levelPermissionDefaults=lv=>lv==='Corporate'?['ops','um','rep']:lv==='Regional'?['ops','rep']:lv==='Area'?['ops','rep']:lv==='Restaurant'?['ops']:[];
@@ -544,7 +593,7 @@ function openActionItems(user,level){
 }
 function drawActionItems(user){
  const location=selectedDailyLocation(user),locationId=location&&location.id||'default',
-  mine=S.actionItems.filter(action=>action.locationId===locationId&&(!ACTION_FILTER||(PRIORITY_LEVELS[action.level]?action.level:'medium')===ACTION_FILTER)),
+  mine=S.actionItems.filter(action=>action.locationId===locationId&&!actionVerified(action)&&(!ACTION_FILTER||(PRIORITY_LEVELS[action.level]?action.level:'medium')===ACTION_FILTER)),
   setStatus=(action,status)=>{
    const previous=action.status,previousCompleted=action.completed;
    action.status=status;
@@ -843,11 +892,14 @@ function renderAdmin(){
    makeTile('Location Management','Create and organize stores, offices, and regions','org',openLocations),
    makeTile('Role Management','Add or remove roles and choose the permissions each role receives','shield',openRoleManager)
   ],
+  checklistTools=[['check_opening','Opening'],['check_midday','Mid-Day'],['check_closing','Closing']].map(([module,name])=>makeTile('Manage '+name+' Checklist Items','Add and organize categories and checklist items','clipboard',()=>openChecklistManager(module))),
   contentTools=[
    makeTile('Manage Walkthrough Items','Add and organize items shared by Morning and Evening Walkthroughs','clipboard',openWalkthroughManager),
-   ...[['check_opening','Opening'],['check_midday','Mid-Day'],['check_closing','Closing']].map(([module,name])=>makeTile('Manage '+name+' Checklist Items','Add and organize categories and checklist items','clipboard',()=>openChecklistManager(module))),
+   checklistTools[0],
    makeTile('Manage Temperature Log Items','Add and organize categories and items for Morning, Mid-Day, and Evening temperature logs','thermometer',()=>openChecklistManager('temperature_logs')),
+   checklistTools[1],
    makeTile('Manage Food Order Temp. Items','Add and organize categories and food order items','clipboard',()=>openChecklistManager('food_order')),
+   checklistTools[2],
    makeTile('Management Visit Item Manager','Add and organize review points for each Management Visit category','clipboard',()=>openChecklistManager('mvr'))
   ];
  g.className='admin-groups';
@@ -1225,10 +1277,12 @@ const UMS={level:'All Levels',role:'All Roles',region:'All Locations',status:'Ac
 function defaultRolePermissions(role){
  const all=PERMS.map(p=>p[0]),dashboard=DASHBOARD_ACCESS.map(o=>o[0]),perms={};
  const on=role==='System Administrator'?all:
-  role==='Operations Director'?all.filter(k=>k!=='admin'):
-  ['Regional Director','Area Representative'].includes(role)?['ops','rep'].concat(dashboard.filter(k=>k!=='dash_users')):
-  ['ops'].concat(dashboard.filter(k=>!['dash_users','dash_actions','dash_insights','dash_mvr','dash_commentary'].includes(k)||k==='dash_commentary'&&role==='Restaurant Manager'||k==='dash_actions'&&role==='Restaurant Manager'||k==='dash_insights'&&['Restaurant Manager','Assistant Manager'].includes(role)||k==='dash_mvr'&&role==='Restaurant Manager'));
+  role==='Operations Director'?all.filter(k=>!['admin','dash_verify_actions'].includes(k)):
+  ['Regional Director','Area Representative'].includes(role)?['ops','rep'].concat(dashboard.filter(k=>!['dash_users','dash_verify_actions'].includes(k))):
+  ['ops'].concat(dashboard.filter(k=>!['dash_users','dash_actions','dash_insights','dash_mvr','dash_commentary','dash_verify_actions'].includes(k)||k==='dash_commentary'&&role==='Restaurant Manager'||k==='dash_actions'&&role==='Restaurant Manager'||k==='dash_insights'&&['Restaurant Manager','Assistant Manager'].includes(role)||k==='dash_mvr'&&role==='Restaurant Manager'));
  all.forEach(k=>{perms[k]=on.includes(k)});
+ perms.dash_store_overview=perms.dash_insights;
+ perms.dash_temp_exceptions=['dash_temp_morning','dash_temp_midday','dash_temp_evening','dash_food_order'].some(key=>perms[key]);
  return perms
 }
 if(!Array.isArray(S.roles)){
@@ -1240,7 +1294,13 @@ if(!Array.isArray(S.roles)){
  S.roles.forEach(role=>{
   role.perms=role.perms||{};
   const defaults=defaultRolePermissions(role.name);
-  PERMS.forEach(p=>{if(typeof role.perms[p[0]]!=='boolean'){role.perms[p[0]]=defaults[p[0]];rolesChanged=true}})
+  PERMS.filter(p=>!['dash_store_overview','dash_temp_exceptions'].includes(p[0])).forEach(p=>{if(typeof role.perms[p[0]]!=='boolean'){role.perms[p[0]]=defaults[p[0]];rolesChanged=true}});
+  if(typeof role.perms.dash_store_overview!=='boolean'){
+   role.perms.dash_store_overview=hasDashboardPermission({on:true,role:role.name,perms:role.perms},'insights');rolesChanged=true
+  }
+  if(typeof role.perms.dash_temp_exceptions!=='boolean'){
+   role.perms.dash_temp_exceptions=hasDashboardPermission({on:true,role:role.name,perms:role.perms},'temp_exceptions');rolesChanged=true
+  }
  });
  if(rolesChanged)save()
 }
@@ -1262,7 +1322,7 @@ function dashboardPermissionEditor(user,defaultLevel){
  const boxes={};
  const rows=DASHBOARD_ACCESS.map(option=>{
   const permissions=user&&user.perms,hasSaved=permissions&&typeof permissions[option[0]]==='boolean',
-   checked=hasSaved?permissions[option[0]]:permissions?!!permissions[option[4]]:levelPermissionDefaults(defaultLevel).indexOf(option[4])>=0,
+   checked=hasSaved?permissions[option[0]]:user?hasDashboardPermission(Object.assign({},user,{on:true}),option[1]):levelPermissionDefaults(defaultLevel).indexOf(option[4])>=0,
    checkbox=h('input',{type:'checkbox',checked});
   boxes[option[0]]=checkbox;
   return h('label',{class:'ck perm'},checkbox,h('span',null,h('b',{text:option[2]}),h('small',{text:option[3]})))
@@ -1276,7 +1336,11 @@ function saveDashboardPermissions(user,boxes){
 function setHomePermissions(user){
  document.querySelectorAll('#home [data-n]').forEach(button=>{
  const module=button.dataset.module||NAMEMAP[button.dataset.n],permission=HOME_PERMISSION_BY_MODULE[module];
- button.classList.toggle('hidden',!permission||!hasDashboardPermission(user,module));
+ const allowed=!!permission&&hasDashboardPermission(user,module);
+ button.classList.toggle('hidden',!allowed);
+ });
+ $('home').querySelectorAll('.home-function-group').forEach(group=>{
+  group.classList.toggle('hidden',![...group.querySelectorAll('.tile')].some(tile=>!tile.classList.contains('hidden')))
  });
  $('home').querySelectorAll('.home-section').forEach(section=>{
   const tiles=section.querySelectorAll('.home-section-options .tile');
@@ -1389,7 +1453,7 @@ function openAdd(){const fn=h('input',{placeholder:'Enter first name'}),ln=h('in
   h('div',{class:'note2'},ico('info'),h('span',{text:'Email delivery is not configured. Share the login email and password securely with the user.'})),err,
   h('div',{class:'btns'},btnI('back','Cancel','alt',goUM),btnI('padd','Create User','',create))))}
 function openPerm(u){const boxes={};
- const permissionRow=p=>{const option=DASHBOARD_ACCESS.find(item=>item[0]===p[0]),hasSavedPermission=u.perms&&typeof u.perms[p[0]]==='boolean',checked=hasSavedPermission?u.perms[p[0]]:option?!!(u.perms&&u.perms[option[4]]):p[0]==='admin'?u.role==='System Administrator':!!(u.perms&&u.perms[p[0]]),cb=h('input',{type:'checkbox',checked});boxes[p[0]]=cb;return h('label',{class:'ck perm'},cb,h('span',null,h('b',{text:p[1]}),h('small',{text:p[2]})))},
+ const permissionRow=p=>{const option=DASHBOARD_ACCESS.find(item=>item[0]===p[0]),hasSavedPermission=u.perms&&typeof u.perms[p[0]]==='boolean',checked=hasSavedPermission?u.perms[p[0]]:option?hasDashboardPermission(Object.assign({},u,{on:true}),option[1]):p[0]==='admin'?u.role==='System Administrator':!!(u.perms&&u.perms[p[0]]),cb=h('input',{type:'checkbox',checked});boxes[p[0]]=cb;return h('label',{class:'ck perm'},cb,h('span',null,h('b',{text:p[1]}),h('small',{text:p[2]})))},
   legacyPermissions=PERMS.filter(p=>!DASHBOARD_ACCESS.some(option=>option[0]===p[0])),
   dashboardPermissions=PERMS.filter(p=>DASHBOARD_ACCESS.some(option=>option[0]===p[0]));
  openUs(panel(null,pageHdr('shield','Manage Permissions','Assign access to dashboard functions and system areas independently.'),userCard(u),h('h4',{class:'sh2',text:'Dashboard Functions'}),h('div',{class:'permbox'},dashboardPermissions.map(permissionRow)),h('h4',{class:'sh2',text:'System Access'}),h('div',{class:'permbox'},legacyPermissions.map(permissionRow)),
@@ -1539,8 +1603,8 @@ function drawInsights(user){
   if(!status)return;
   walkMods.forEach(option=>{
    if(!dailyOptionComplete(option,status))return;
-   const checks=status.walkthroughItems&&status.walkthroughItems[option[1]]||{};
-   (S.walkthroughItems.categories||[]).forEach(category=>(category.items||[]).forEach(item=>{
+   const entry=submittedData(status,option[1]),checks=entry.status.walkthroughItems&&entry.status.walkthroughItems[option[1]]||{};
+   entry.definitions.forEach(category=>(category.items||[]).forEach(item=>{
     if(checks[item.id]!==true)findings.push({name:item.text,category:category.name,day,level:walkthroughPriority(item)})
    }))
   })
@@ -1623,8 +1687,8 @@ function mvrWalkFindings(scope,days){
   if(!status)return;
   DASHBOARD_ACCESS.filter(option=>option[1].indexOf('walk_')===0).forEach(option=>{
    if(!dailyOptionComplete(option,status))return;
-   const checks=status.walkthroughItems&&status.walkthroughItems[option[1]]||{};
-   (S.walkthroughItems.categories||[]).forEach(category=>(category.items||[]).forEach(item=>{
+   const entry=submittedData(status,option[1]),checks=entry.status.walkthroughItems&&entry.status.walkthroughItems[option[1]]||{};
+   entry.definitions.forEach(category=>(category.items||[]).forEach(item=>{
     if(checks[item.id]!==true)list.push({text:category.name+' '+item.text,day})
    }))
   })
@@ -1700,15 +1764,15 @@ function scMetrics(scope,days){
   if(!status)return;
   walkMods.forEach(option=>{
    if(!dailyOptionComplete(option,status))return;
-   const checks=status.walkthroughItems&&status.walkthroughItems[option[1]]||{};
-   (S.walkthroughItems.categories||[]).forEach(category=>(category.items||[]).forEach(item=>{
+   const entry=submittedData(status,option[1]),checks=entry.status.walkthroughItems&&entry.status.walkthroughItems[option[1]]||{};
+   entry.definitions.forEach(category=>(category.items||[]).forEach(item=>{
     if(checks[item.id]!==true)findings.push({name:item.text,category:category.name})
    }))
   });
   mods('temp_').forEach(option=>{
    if(!dailyOptionComplete(option,status))return;
-   const values=status.temperatureReadings&&status.temperatureReadings[option[1]]||{};
-   temperatureItemsFor(option[1]).forEach(category=>(category.items||[]).forEach(item=>{
+   const entry=submittedData(status,option[1]),values=entry.status.temperatureReadings&&entry.status.temperatureReadings[option[1]]||{};
+   entry.definitions.forEach(category=>(category.items||[]).forEach(item=>{
     const value=values[item.id];
     if(value===undefined||value===''||!Number.isFinite(Number(value)))return;
     readings++;if(!tempFlag(item,value))inRange++
@@ -1734,7 +1798,9 @@ function scMetrics(scope,days){
    action:actions.length?done.length/actions.length*100:null,
    ready:readinessScores.length?readinessScores.reduce((a,b)=>a+b,0)/readinessScores.length:null,
    mvr:periodVisits.length?periodVisits.reduce((sum,visit)=>sum+visit.score,0)/periodVisits.length:null,
-   created:actions.length,closed:done.length,openCritical,
+   created:actions.length,closed:done.length,verified:done.filter(actionVerified).length,openCritical,
+   walkExpected:walkMods.length*days.length*scope.length,checkExpected:mods('check_').length*days.length*scope.length,
+   readings,inRange,readinessDays:readinessScores.length,
    avgResolution:resolved.length?insightsDuration(resolved.reduce((sum,action)=>sum+action.completed-action.created,0)/resolved.length):'—',
    mvrCurrent:latest?latest.score:null,mvrPrevious:previous?previous.score:null,mvrCount:periodVisits.length,findings
   },
@@ -1965,9 +2031,6 @@ function mvrInsightsPanel(scope,from,to){
 const homeGrid=$('home').querySelector('.grid'),
  homeSections=h('div',{class:'home-sections'}),
  homeSectionOptions={
-  'Manager Walkthroughs':{options:['Morning Manager Walkthrough','Evening Manager Walkthrough'],description:null},
-  'Checklists':{options:['Opening Checklist','Mid-Day Checklist','Closing Checklist'],description:null},
-  'Temperature Logs':{options:['Morning Temperature Logs','Mid-Day Temperature Logs','Evening Temperature Logs','Food Order'],description:null},
   'User Functions':{options:['User Management'],description:null}
  };
 $('home').querySelector('.welcome').after(h('section',{class:'daily-progress','aria-labelledby':'dailyProgressTitle'},h('div',{id:'todayProgress','aria-live':'polite'})));
@@ -1981,15 +2044,6 @@ Object.entries(homeSectionOptions).forEach(([title,config])=>{
  const options=h('div',{class:'grid home-section-options'}),
   section=h('section',{class:'home-section',...(config.module?{'data-n':title,'data-module':config.module}:{})},h('h3',{text:title}),options);
  config.options.forEach(name=>{
-  if(title==='Temperature Logs'||title==='Manager Walkthroughs'||title==='Checklists'){
-   const option=DASHBOARD_ACCESS.find(item=>item[2]===name);
-   if(option){
-    const icon=title==='Temperature Logs'?'thermometer':'clipboard',
-     label=name.replace(' Temperature Logs','').replace(' Manager Walkthrough','').replace(' Checklist','');
-    options.append(h('button',{class:'tile','data-n':name,'data-module':option[1]},h('span',{class:'ico'},ico(icon)),h('span',{class:'lbl',text:label}),h('span',{class:'chev',text:'›'})))
-   }
-   return
-  }
   const tile=[...homeGrid.querySelectorAll('.tile')].find(button=>button.dataset.n===name);
   if(tile)options.append(tile)
  });
@@ -1999,8 +2053,25 @@ Object.entries(homeSectionOptions).forEach(([title,config])=>{
   h('button',{class:'tile','data-n':'Action Center','data-module':'actions',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'Action Center'}),h('span',{class:'chev',text:'›'})),
   h('button',{class:'tile','data-n':'Operational Insights','data-module':'insights',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'Operational Insights'}),h('span',{class:'chev',text:'›'})),
   h('button',{class:'tile','data-n':'Performance Scorecard','data-module':'scorecard',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'Performance Scorecard'}),h('span',{class:'chev',text:'›'})),
-  h('button',{class:'tile','data-n':'Management Visits','data-module':'mvr',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'Management Visits'}),h('span',{class:'chev',text:'›'}))
+  h('button',{class:'tile','data-n':'Management Visits','data-module':'mvr',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'Management Visits'}),h('span',{class:'chev',text:'›'})),
+  h('button',{class:'tile','data-n':'Verify Completed Action Items','data-module':'verify_actions',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'Verify Completed Action Items'}),h('span',{class:'chev',text:'›'})),
+  h('button',{class:'tile','data-n':'Multi-Store Overview','data-module':'store_overview',type:'button'},h('span',{class:'ico'},ico('org')),h('span',{class:'lbl',text:'Multi-Store Overview'}),h('span',{class:'chev',text:'›'})),
+  h('button',{class:'tile','data-n':'My Actions','data-module':'actions',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'My Actions'}),h('span',{class:'chev',text:'›'})),
+  h('button',{class:'tile','data-n':'Temperature Exceptions','data-module':'temp_exceptions',type:'button'},h('span',{class:'ico'},ico('thermometer')),h('span',{class:'lbl',text:'Temperature Exceptions'}),h('span',{class:'chev',text:'›'}))
  );
+ if(title==='User Functions'){
+  const groups=[
+   ['Daily Follow-Up',['My Actions','Action Center','Temperature Exceptions','Verify Completed Action Items']],
+   ['Performance and Reviews',['Multi-Store Overview','Operational Insights','Performance Scorecard','Management Visits']],
+   ['Records and Administration',['View Entries','User Management']]
+  ];
+  const sections=groups.map(([label,names])=>{
+   const grid=h('div',{class:'grid home-section-options'});
+   names.forEach(name=>{const tile=[...options.querySelectorAll('.tile')].find(button=>button.dataset.n===name);if(tile)grid.append(tile)});
+   return h('section',{class:'home-function-group'},h('h4',{text:label}),grid)
+  });
+  options.replaceWith(...sections)
+ }
  if(config.description)options.replaceWith(h('p',{class:'home-section-placeholder',text:config.description}));
  homeSections.append(section)
 });
@@ -2009,11 +2080,119 @@ document.querySelectorAll('#home button[data-n]').forEach(button=>{
  const module=button.dataset.module||NAMEMAP[button.dataset.n];
  if(module)button.onclick=()=>module==='entries'?openEntries():module==='actions'?openActionItems(items('users').find(account=>account.id===CURRENT_USER_ID)):module==='food_order'||module.indexOf('temp_')===0||module.indexOf('walk_')===0||module.indexOf('check_')===0?openDashboardOption(module):openMod(module)
 });
-document.querySelector('#home button[data-module="insights"]').onclick=()=>openInsights(items('users').find(account=>account.id===CURRENT_USER_ID));
+document.querySelector('#home button[data-n="Operational Insights"]').onclick=()=>openInsights(items('users').find(account=>account.id===CURRENT_USER_ID));
 document.querySelector('#home button[data-module="mvr"]').onclick=()=>openMvr(items('users').find(account=>account.id===CURRENT_USER_ID));
+document.querySelector('#home button[data-module="verify_actions"]').onclick=()=>openVerifyActions('home');
+document.querySelector('#home button[data-n="Multi-Store Overview"]').onclick=()=>openStoreOverview();
+document.querySelector('#home button[data-n="My Actions"]').onclick=()=>openMyActions();
+document.querySelector('#home button[data-n="Temperature Exceptions"]').onclick=()=>openTemperatureExceptions();
 document.querySelector('#home button[data-n="Performance Scorecard"]').onclick=()=>openScorecard(items('users').find(account=>account.id===CURRENT_USER_ID));
 $('hb').onclick=()=>show('home');$('ab').onclick=()=>show('home');$('eb').onclick=()=>{if(!isSystemAdministrator()){show('home');return}renderAdmin();show('admin')};
 $('umb').onclick=leaveUM;$('usb').onclick=goUM;
+
+function oversightUser(){return items('users').find(user=>user.id===CURRENT_USER_ID&&user.on)}
+function openOversightStore(user,store,open){
+ if(!dailyLocationsForUser(user).some(location=>location.id===store.id)){t('This restaurant is no longer available.');return}
+ const previous=S.dailyLocationSelection[user.id];
+ S.dailyLocationSelection[user.id]=store.id;
+ if(!save()){if(previous===undefined)delete S.dailyLocationSelection[user.id];else S.dailyLocationSelection[user.id]=previous;t('Unable to select this restaurant.');return}
+ open()
+}
+function temperatureExceptions(user,storeId){
+ const result=[],stores=dailyLocationsForUser(user),ids=new Set(stores.filter(store=>!storeId||store.id===storeId).map(store=>store.id)),
+  explicitAccess=user.perms&&typeof user.perms.dash_temp_exceptions==='boolean';
+ Object.entries(S.dailyStatus||{}).forEach(([key,status])=>{
+  const split=key.indexOf('|'),date=key.slice(0,split),locationId=key.slice(split+1);
+  if(split<0||!ids.has(locationId))return;
+  TEMP_MODULES.concat('food_order').filter(module=>explicitAccess||hasDashboardPermission(user,module)).forEach(module=>{
+   const snapshot=status.submissionSnapshots&&status.submissionSnapshots[module],
+    entryStatus=snapshot?snapshot.status:status,
+    readings=module==='food_order'?entryStatus.foodOrderTemperatures||{}:entryStatus.temperatureReadings&&entryStatus.temperatureReadings[module]||{},
+    definitions=snapshot?snapshot.definitions:submissionDefinitions(module);
+   definitions.forEach(category=>(category.items||[]).forEach(item=>{
+    const value=readings[item.id];
+    if(value===undefined||value===''||!Number.isFinite(Number(value))||!tempFlag(item,value,module!=='food_order'))return;
+    const currentCorrection=tempFixFor(status,module,item.id),savedCorrection=tempFixFor(entryStatus,module,item.id),
+     correction=currentCorrection&&String(currentCorrection.tempRecorded)===String(value)?currentCorrection:savedCorrection&&String(savedCorrection.tempRecorded)===String(value)?savedCorrection:null,
+     follow=correction&&correction.followUp;
+    result.push({date,locationId,module,item,value,correction,follow,submittedAt:snapshot?snapshot.submittedAt:status.submittedAt&&status.submittedAt[module]})
+   }))
+  })
+ });
+ return result.sort((a,b)=>b.date.localeCompare(a.date))
+}
+function openTemperatureExceptions(){
+ const user=oversightUser();
+ if(!user||!hasDashboardPermission(user,'temp_exceptions')){t('You do not have permission to view temperature exceptions.');return}
+ $('mt').textContent='Temperature Exceptions';$('md').textContent='Review out-of-range readings and recorded corrective actions for assigned stores.';
+ const stores=dailyLocationsForUser(user),selector=h('select',{'aria-label':'Filter exceptions by store'},h('option',{value:'all',text:'All assigned stores'}),stores.map(store=>h('option',{value:store.id,text:locationPath(store)}))),
+  from=h('input',{type:'date','aria-label':'Exceptions from date'}),to=h('input',{type:'date','aria-label':'Exceptions to date'}),
+  list=h('div');
+ const draw=()=>{
+  const current=oversightUser();
+  if(!current||current.id!==user.id||!hasDashboardPermission(current,'temp_exceptions')){t('You do not have permission to view temperature exceptions.');show('home');return}
+  if(from.value&&to.value&&from.value>to.value){list.replaceChildren(panel(null,empty('The start date must be on or before the end date.')));return}
+  const rows=temperatureExceptions(user,selector.value==='all'?null:selector.value).filter(row=>(!from.value||row.date>=from.value)&&(!to.value||row.date<=to.value));
+  list.replaceChildren(panel('Temperature Exceptions ('+rows.length+')',
+   h('p',{class:'note',text:'Corrective actions and follow-up readings are shown for review; exceptions are not automatically marked resolved. Times shown are submission times where available.'}),
+   rows.length?rows.map(row=>{
+    const store=stores.find(item=>item.id===row.locationId),option=DASHBOARD_ACCESS.find(item=>item[1]===row.module),correction=row.correction,
+     follow=correction&&row.follow!==''&&row.follow!==undefined?row.follow+'°F · '+(tempFlag(row.item,row.follow)?'out of range':'in range'):'Not recorded';
+    return h('div',{class:'ins-row'},h('span',null,h('b',{text:row.item.text+' · '+row.value+'°F'}),h('small',{text:locationPath(store)+' · '+row.date+' · '+option[2]+(row.submittedAt?' · Submitted '+acFmtTime(row.submittedAt):' · Reading time unavailable')+' · Corrective action: '+(correction?correction.action:'Not recorded')+' · Follow-up: '+follow})),
+     hasDashboardPermission(user,row.module)?h('button',{class:'btn alt sm2',type:'button',text:'Open Log',onclick:()=>openOversightStore(user,store,()=>{
+      const previous=S.dailyDateSelection[user.id];S.dailyDateSelection[user.id]=row.date;
+      if(!save()){if(previous===undefined)delete S.dailyDateSelection[user.id];else S.dailyDateSelection[user.id]=previous;t('Unable to select the log date.');return}
+      openDashboardOption(row.module)
+     })}):null)
+   }):empty('No recorded out-of-range temperature readings.')))
+ };
+ selector.onchange=draw;from.onchange=draw;to.onchange=draw;
+ $('mc').replaceChildren(panel(null,h('div',{class:'aud-filters exception-filters'},field('Store',selector),field('From',from),field('To',to))),list);draw();show('mod')
+}
+let MY_ACTION_FILTER='all';
+function openMyActions(){
+ const user=oversightUser();
+ if(!user||!hasDashboardPermission(user,'actions')){t('You do not have permission to access the Action Center.');return}
+ $('mt').textContent='My Actions';$('md').textContent='Review your assigned actions across your assigned stores.';
+ const stores=dailyLocationsForUser(user),ids=new Set(stores.map(store=>store.id)),
+  select=h('select',{'aria-label':'Filter my actions'},[['all','All assigned'],['today','Due today'],['overdue','Overdue'],['verification','Awaiting verification']].map(([value,text])=>h('option',{value,text}))),
+  list=h('div');
+ select.value=MY_ACTION_FILTER;
+ const draw=()=>{
+  const actions=S.actionItems.filter(action=>{
+   if(!ids.has(action.locationId)||String(action.ownerId)!==String(user.id)||actionVerified(action))return false;
+   const timing=actionTiming(action);
+   return MY_ACTION_FILTER==='verification'?actionStage(action)==='Completed':MY_ACTION_FILTER==='today'?timing&&timing.left===0:MY_ACTION_FILTER==='overdue'?timing&&timing.left<0:action.status!=='Done'||actionStage(action)==='Completed'
+  });
+  list.replaceChildren(panel('Assigned Actions ('+actions.length+')',
+   h('p',{class:'note',text:'Reminders use this browser’s data and appear while Shift Hero is open.'}),actions.length?actions.map(action=>{
+   const store=stores.find(item=>item.id===action.locationId),timing=actionTiming(action);
+   return h('div',{class:'ins-row'},h('span',null,h('b',{text:action.description}),h('small',{text:locationPath(store)+' · '+actionStage(action)+(timing?' · Due '+scDate(timing.due)+(timing.left<0?' · Overdue':''):'')})),h('button',{class:'btn alt sm2',type:'button',text:'Open Action Center',onclick:()=>openOversightStore(user,store,()=>openActionItems(user))}))
+  }):empty('No assigned actions match this filter.')))
+ };
+ select.onchange=()=>{MY_ACTION_FILTER=select.value;draw()};$('mc').replaceChildren(panel(null,field('Show',select)),list);draw();show('mod')
+}
+function openStoreOverview(){
+ const user=oversightUser();
+ if(!user||!hasDashboardPermission(user,'store_overview')){t('You do not have permission to view the multi-store overview.');return}
+ const stores=dailyLocationsForUser(user),date=todayDateKey(),
+  daily=DASHBOARD_ACCESS.filter(option=>/^(walk_|check_|temp_)/.test(option[1])||option[1]==='food_order').filter(option=>hasDashboardPermission(user,option[1])),
+  canActions=hasDashboardPermission(user,'actions'),canVerify=hasDashboardPermission(user,'verify_actions'),canMvr=hasDashboardPermission(user,'mvr'),
+  canTemp=hasDashboardPermission(user,'temp_exceptions'),exceptions=canTemp?temperatureExceptions(user):[];
+ $('mt').textContent='Multi-Store Overview';$('md').textContent='Today’s submissions and current follow-up across your assigned restaurants.';
+ $('mc').replaceChildren(panel('Restaurants ('+stores.length+')',
+  h('p',{class:'note',text:'Only data stored in this browser is shown. Missing submissions are expected forms not yet submitted today; no due time is assumed.'}),
+  stores.length?stores.map(store=>{
+   const status=S.dailyStatus&&S.dailyStatus[date+'|'+store.id]||{},missing=daily.filter(option=>!dailyOptionComplete(option,status)).length,
+    actions=S.actionItems.filter(action=>action.locationId===store.id),visits=canMvr?S.mvrVisits.filter(v=>v.locationId===store.id&&v.status==='Complete').sort((a,b)=>b.date.localeCompare(a.date)||b.created-a.created):[],
+    facts=[daily.length?missing+' of '+daily.length+' forms not submitted':'No permitted daily forms'];
+   if(canActions){facts.push(actions.filter(a=>a.status!=='Done'&&a.level==='critical').length+' open critical');facts.push(actions.filter(a=>(actionTiming(a)||{}).state==='late').length+' overdue')}
+   if(canVerify)facts.push(actions.filter(a=>actionStage(a)==='Completed').length+' awaiting verification');
+   if(canTemp)facts.push(exceptions.filter(row=>row.locationId===store.id&&row.date===date).length+' temperature exceptions today');
+   if(canMvr)facts.push(visits.length?'Last visit '+mvrDate(visits[0].date)+' · '+visits[0].score+'%':'No completed visits');
+   return h('div',{class:'ins-row'},h('span',null,h('b',{text:locationPath(store)}),h('small',{text:facts.join(' · ')})),h('button',{class:'btn alt sm2',type:'button',text:'Open Store Dashboard',onclick:()=>openOversightStore(user,store,()=>show('home'))}))
+  }):empty('No stores are assigned to your account.')));show('mod')
+}
 /* Demo environment initialization */
 const DEMO_EMAIL='admin@shifthero.demo';
 function populateDemoData(passwordHash){
@@ -2270,9 +2449,8 @@ function actionExtras(action,user){
   update(()=>{if(owner){action.ownerId=owner.id;action.ownerName=owner.name;action.assignedAt=Date.now()}else{delete action.ownerId;delete action.ownerName;delete action.assignedAt}})
  };
  dueInput.onchange=()=>update(()=>{if(/^\d{4}-\d{2}-\d{2}$/.test(dueInput.value))action.dueDate=dueInput.value;else delete action.dueDate});
- const verify=stage==='Completed'?h('button',{class:'btn sm2',type:'button',text:'Verify Completion',onclick:()=>update(()=>{action.verified={by:user.id,byName:user.name,at:Date.now()}})}):null,
-  verified=stage==='Verified'?h('span',{text:'Verified by '+(action.verified.byName||'a manager')+' · '+acFmtDate(action.verified.at)}):null;
- return h('div',{class:'act-own'},chips,h('label',null,'Owner',ownerSelect),action.status!=='Done'?h('label',null,'Due',dueInput):null,verify,verified)
+ const verified=stage==='Verified'?h('span',{text:'Verified by '+(action.verified.byName||'a manager')+' · '+acFmtDate(action.verified.at)}):null;
+ return h('div',{class:'act-own'},chips,h('label',null,'Owner',ownerSelect),action.status!=='Done'?h('label',null,'Due',dueInput):null,verified)
 }
 function refreshOverdueAlert(user){
  let box=$('overdueAlert');
@@ -2295,7 +2473,28 @@ function refreshOverdueAlert(user){
   h('span',{class:'chev',text:'›'})))
 }
 const acBaseRenderPriority=renderPriorityPanel;
-renderPriorityPanel=function(user){acBaseRenderPriority(user);try{refreshOverdueAlert(user)}catch(error){console.error('Overdue alert failed:',error)}};
+renderPriorityPanel=function(user){
+ acBaseRenderPriority(user);
+ try{refreshOverdueAlert(user)}catch(error){console.error('Overdue alert failed:',error)}
+ let reminder=$('myActionsReminder');
+ if(!reminder){
+  reminder=h('section',{id:'myActionsReminder',class:'daily-progress overdue-alert hidden','aria-live':'polite'});
+  const anchor=$('home').querySelector('.restaurant-status');
+  if(anchor)anchor.before(reminder)
+ }
+ if(!user||!hasDashboardPermission(user,'actions')){reminder.classList.add('hidden');return}
+ const ids=new Set(dailyLocationsForUser(user).map(store=>store.id)),
+  mine=S.actionItems.filter(action=>ids.has(action.locationId)&&String(action.ownerId)===String(user.id)),
+  overdue=mine.filter(action=>(actionTiming(action)||{}).left<0).length,
+  today=mine.filter(action=>(actionTiming(action)||{}).left===0).length,
+  awaiting=mine.filter(action=>actionStage(action)==='Completed').length;
+ if(!overdue&&!today&&!awaiting){reminder.classList.add('hidden');reminder.replaceChildren();return}
+ reminder.classList.remove('hidden');
+ reminder.replaceChildren(h('button',{class:'overdue-btn',type:'button',onclick:openMyActions},
+  h('b',{text:'My Actions · Reminder'}),
+  h('small',{text:[overdue?overdue+' overdue':'',today?today+' due today':'',awaiting?awaiting+' awaiting verification':''].filter(Boolean).join(' · ')}),
+  h('span',{class:'chev',text:'›'})))
+};
 
 /* ----- Temperature corrective actions (shown only for out-of-range readings) ----- */
 const TEMP_FIX_ACTIONS=['Moved product to functioning cooler','Discarded affected product','Rechecked after 15 minutes','Adjusted equipment settings','Called for equipment service','Other (describe in notes)'];
@@ -2401,12 +2600,78 @@ function drawAuditHistory(){
    rows.length>AUD_VIEW.n?h('div',{class:'btns left'},h('button',{class:'btn alt',type:'button',text:'Show more',onclick:()=>{AUD_VIEW.n+=50;drawAuditHistory()}})):null,
    h('p',{class:'note',text:'The most recent '+AUDIT_MAX+' events are kept in this browser.'})]:empty('No audit events match. Events are recorded as users create actions, complete walkthroughs and MVRs, and modify users.')))
 }
+/* ----- Verify Completed Action Items (Administration) ----- */
+function openVerifyActions(from){
+ const user=items('users').find(account=>account.id===CURRENT_USER_ID);
+ if(!user||!user.on||!hasDashboardPermission(user,'verify_actions')){t('You do not have permission to verify action items.');return}
+ VERIFY_TARGET=from==='admin'&&isSystemAdministrator()?'edit':'mod';
+ $(VERIFY_TARGET==='edit'?'et':'mt').textContent='Verify Completed Action Items';
+ $(VERIFY_TARGET==='edit'?'ed':'md').textContent='Review completed action items for every assigned store and verify that the work was done.';
+ drawVerifyActions();show(VERIFY_TARGET)
+}
+let VERIFY_STORE='',VERIFY_FROM='',VERIFY_TO='',VERIFY_OPEN=false,VERIFY_TARGET='mod';
+function drawVerifyActions(){
+ const user=items('users').find(account=>account.id===CURRENT_USER_ID);
+ if(!user||!user.on||!hasDashboardPermission(user,'verify_actions')){t('You do not have permission to verify action items.');show('home');return}
+ const stores=dailyLocationsForUser(user);
+ if(!stores.some(store=>store.id===VERIFY_STORE))VERIFY_STORE=stores[0]?stores[0].id:'';
+ const verify=action=>{
+   const current=items('users').find(account=>account.id===CURRENT_USER_ID);
+   if(!current||!current.on||!hasDashboardPermission(current,'verify_actions')||!dailyLocationsForUser(current).some(store=>store.id===action.locationId)||!S.actionItems.includes(action)||actionStage(action)!=='Completed'){
+    t('This action item is no longer available for verification.');drawVerifyActions();return
+   }
+   const previous=action.verified;
+   action.verified={by:current.id,byName:current.name,at:Date.now()};
+   if(!save()){if(previous===undefined)delete action.verified;else action.verified=previous;t('Unable to verify the action item. Browser storage may be full.');return}
+   renderPriorityPanel(user);drawVerifyActions()
+  },
+  storeSelect=h('select',{'aria-label':'Select store',onchange:event=>{VERIFY_STORE=event.target.value;drawVerifyActions()}},
+   stores.map(store=>{
+    const count=S.actionItems.filter(action=>action.locationId===store.id&&actionStage(action)==='Completed').length;
+    return h('option',{value:store.id,text:locationPath(store)+' ('+count+')'})
+   })),
+  store=stores.find(item=>item.id===VERIFY_STORE);
+ storeSelect.value=VERIFY_STORE;
+ if(!store){$(VERIFY_TARGET==='edit'?'ec':'mc').replaceChildren(panel(null,empty('No stores are assigned to your account.')));return}
+ const pending=S.actionItems.filter(action=>action.locationId===store.id&&actionStage(action)==='Completed')
+   .sort((a,b)=>(a.completed||0)-(b.completed||0)),
+  rows=pending.length?pending.map(action=>{
+   const level=PRIORITY_LEVELS[action.level]||PRIORITY_LEVELS.medium,levelKey=PRIORITY_LEVELS[action.level]?action.level:'medium';
+   return h('div',{class:'walk-task-row action-row '+levelKey},
+    h('div',{class:'walk-task-main'},h('span',null,h('b',{text:action.description}),h('small',{text:' '+action.title+' · '+action.category+' · Completed '+acFmtDate(action.completed||action.created)+(action.ownerName?' · Owner: '+action.ownerName:'')}))),
+    h('span',{class:'priority-status '+levelKey,text:level[0]+' '+level[1]}),
+    h('div',{class:'action-quick'},h('button',{class:'btn sm2',type:'button',text:'Verify Completion','aria-label':'Verify completion of '+action.description,onclick:()=>verify(action)})))
+  }):[empty('No completed action items are waiting for verification.')];
+ const dayStart=value=>value?new Date(value+'T00:00:00').getTime():null,
+  dayEnd=value=>value?new Date(value+'T23:59:59.999').getTime():null,
+  from=dayStart(VERIFY_FROM),to=dayEnd(VERIFY_TO),
+  filtered=!!(from||to),
+  verifiedItems=S.actionItems.filter(action=>action.locationId===store.id&&actionVerified(action)&&(!from||action.verified.at>=from)&&(!to||action.verified.at<=to))
+   .sort((a,b)=>b.verified.at-a.verified.at),
+  dateInput=(label,key)=>field(label,h('input',{type:'date',value:key==='from'?VERIFY_FROM:VERIFY_TO,'aria-label':label,onchange:event=>{if(key==='from')VERIFY_FROM=event.target.value;else VERIFY_TO=event.target.value;drawVerifyActions()}})),
+  dateFilters=h('div',{class:'aud-filters'},dateInput('Verified from','from'),dateInput('Verified to','to'),
+   filtered?h('button',{class:'btn sm2',type:'button',text:'Clear dates',onclick:()=>{VERIFY_FROM='';VERIFY_TO='';drawVerifyActions()}}):null),
+  history=h('details',{class:'panel action-done',ontoggle:event=>{VERIFY_OPEN=event.target.open}},h('summary',{text:'Verified Action Items ('+verifiedItems.length+')'}),
+   dateFilters,
+   verifiedItems.length?verifiedItems.map(action=>{
+    const level=PRIORITY_LEVELS[action.level]||PRIORITY_LEVELS.medium,levelKey=PRIORITY_LEVELS[action.level]?action.level:'medium';
+    return h('div',{class:'walk-task-row action-row done '+levelKey},
+     h('div',{class:'walk-task-main done'},h('span',null,h('b',{text:action.description}),h('small',{text:' '+action.title+' · '+action.category+' · Verified by '+(action.verified.byName||'a manager')+' · '+acFmtDate(action.verified.at)}))),
+     h('span',{class:'priority-status '+levelKey,text:level[0]+' '+level[1]}))
+   }):empty(filtered?'No verified action items in this date range.':'No verified action items yet.'));
+ history.open=filtered||VERIFY_OPEN;
+ $(VERIFY_TARGET==='edit'?'ec':'mc').replaceChildren(
+  panel(null,h('div',{class:'aud-filters'},field('Store',storeSelect))),
+  panel('Awaiting Verification ('+pending.length+')',rows),
+  history)
+}
 const acBaseRenderAdmin=renderAdmin;
 renderAdmin=function(){
  acBaseRenderAdmin();
  const g=$('ag');
- if(g&&isSystemAdministrator())g.append(panel('Administration',h('div',{class:'grid'},h('button',{class:'tile',onclick:openAuditHistory},
-  h('span',{class:'ico'},ico('shield')),h('span',{class:'lbl'},'Audit History',h('small',{text:'Review who changed what and when'})),h('span',{class:'chev',text:'›'})))))
+ if(g&&isSystemAdministrator())g.append(panel('Administration',h('div',{class:'grid'},
+  h('button',{class:'tile',onclick:openAuditHistory},h('span',{class:'ico'},ico('shield')),h('span',{class:'lbl'},'Audit History',h('small',{text:'Review who changed what and when'})),h('span',{class:'chev',text:'›'})),
+  hasDashboardPermission(items('users').find(account=>account.id===CURRENT_USER_ID),'verify_actions')?h('button',{class:'tile',onclick:()=>openVerifyActions('admin')},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl'},'Verify Completed Action Items',h('small',{text:'Verify completed action items for all assigned stores'})),h('span',{class:'chev',text:'›'})):null)))
 };
 
 /* ----- Manager commentary ----- */
@@ -2527,12 +2792,12 @@ function scOpenDrill(label,key,ctx){
    if(!status)return;
    mods('temp_').forEach(option=>{
     if(!dailyOptionComplete(option,status))return;
-    const values=status.temperatureReadings&&status.temperatureReadings[option[1]]||{};
-    temperatureItemsFor(option[1]).forEach(cat=>(cat.items||[]).forEach(item=>{
+    const entry=submittedData(status,option[1]),values=entry.status.temperatureReadings&&entry.status.temperatureReadings[option[1]]||{};
+    entry.definitions.forEach(cat=>(cat.items||[]).forEach(item=>{
      const v=values[item.id];
      if(v===undefined||v===''||!Number.isFinite(Number(v)))return;
      total++;
-     if(tempFlag(item,v)){const fix=tempFixFor(status,option[1],item.id);rows.push([scDate(day),multi?acStore(store.id):null,option[2],item.text,v+'°F',fix?fix.action:'Not recorded'].filter(x=>x!==null))}
+     if(tempFlag(item,v)){const fix=tempFixFor(entry.status,option[1],item.id);rows.push([scDate(day),multi?acStore(store.id):null,option[2],item.text,v+'°F',fix?fix.action:'Not recorded'].filter(x=>x!==null))}
     }))
    })
   }));
@@ -2625,6 +2890,13 @@ drawScorecard=function(user){
  try{
   const report=$('mc').querySelector('.sc-report'),ctx=report&&scCtx(user);
   if(!ctx)return;
+  const m=ctx.cur;
+  report.append(panel('Understanding These Results',
+   h('p',{class:'note',text:'Select a score or metric for its calculation and contributing records. Completion measures submissions, not whether every item was checked. Expected forms are based on every store and day in the selected range.'}),
+   h('p',{class:'note',text:'Walkthroughs: '+(m.walk===null?'no expected forms':Math.round(m.walk*m.walkExpected/100)+' of '+m.walkExpected+' expected submissions')+' · Checklists: '+(m.check===null?'no expected forms':Math.round(m.check*m.checkExpected/100)+' of '+m.checkExpected+' expected submissions')+' · Temperature readings: '+m.inRange+' in range of '+m.readings+' recorded.'}),
+   h('p',{class:'note',text:'Actions created in the period: '+m.created+' · Completed: '+m.closed+' · Currently verified: '+m.verified+' · Completed and awaiting verification: '+(m.closed-m.verified)+'. Completion and verification are different stages.'}),
+   h('p',{class:'note',text:'Readiness uses '+m.readinessDays+' submitted store-days; MVR uses '+m.mvrCount+' completed visits. Small samples may not represent sustained performance. Missing components are excluded from the weighted score.'}),
+   h('p',{class:'note',text:'New submissions use saved item definitions and readings. Older legacy submissions use current definitions where original details were not saved.'})));
   scWireDrill(report,ctx);scCommentarySections(report,ctx)
  }catch(error){console.error('Scorecard extensions failed:',error)}
 };
@@ -2797,6 +3069,8 @@ drawInsights=function(user){
    PERMS.forEach(permission=>{permissions[permission[0]]=false});
    permissions.ops=true;permissions.rep=role.modules.includes('commentary');permissions.um=!!role.admin;permissions.admin=!!role.admin;
    DASHBOARD_ACCESS.forEach(option=>{permissions[option[0]]=role.modules.includes(option[1])});
+   permissions.dash_store_overview=permissions.dash_insights;
+   permissions.dash_temp_exceptions=['dash_temp_morning','dash_temp_midday','dash_temp_evening','dash_food_order'].some(key=>permissions[key]);
    const location=role.level==='Restaurant'?S.locations.find(item=>item.id==='loc-demo-store'):
     S.locations.find(item=>item.id===(role.level==='Corporate'?'loc-home-office':'loc-southeast'));
    const user={id:nid(),first:'Demo',last:role.name,name:'Demo '+role.name,email:'',phone:'',role:role.name,level:role.level,locationId:location.id,store:location.name,on:true,last:'Never',perms:permissions};
@@ -2863,7 +3137,7 @@ drawInsights=function(user){
 })();
 
 (()=>{
- const VERSION='1.1',TEXT=[
+ const VERSION='1.2',TEXT=[
   'Shift Hero is an independent educational and portfolio project created by Evan Douma for learning, demonstration, and professional development purposes.',
   'This project is not affiliated with, endorsed by, sponsored by, or officially associated with Firehouse Subs, Restaurant Brands International (RBI), any franchise organization, or any other company.',
   'Any trademarks, logos, brand imagery, fonts, names, or branding elements referenced within the project remain the property of their respective owners.',
