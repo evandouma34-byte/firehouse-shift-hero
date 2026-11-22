@@ -9,7 +9,7 @@ h1,h2,h3,.serif,.btn,.lbl,.pill{font-family:var(--serif);font-weight:700}
 .app{min-height:100vh;display:flex;flex-direction:column}
 header{background:
 #000000;height:84px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;flex:none;position:relative}
-header::after{content:"Firehouse Subs Canada";position:absolute;top:18px;left:50%;transform:translateX(-50%);max-width:45%;color:var(--gold);text-align:center;white-space:nowrap;font:700 clamp(12px,2vw,20px)/1.15 var(--serif);letter-spacing:normal}
+header::after{content:"";position:absolute;top:18px;left:50%;transform:translateX(-50%);max-width:45%;color:var(--gold);text-align:center;white-space:nowrap;font:700 clamp(12px,2vw,20px)/1.15 var(--serif);letter-spacing:normal}
 header::before{content:"";position:absolute;top:48px;left:50%;transform:translateX(-50%);max-width:45%;color:var(--gold);text-align:center;white-space:nowrap;font:400 clamp(9px,1.2vw,13px)/1.15 var(--sans);letter-spacing:.04em}
 header img{height:52px;display:block}
 .hr{display:flex;align-items:center;gap:18px}
@@ -823,7 +823,7 @@ button,.btn,.pill,.user-status-action,.tile .lbl,.seg button,.location-toggle,.t
 #login .brand-foot{color:#e2d5bf}
 #login .brand-foot b{color:#ffd36b}
 #login .disc-link{color:#f5e4bd}
-@media(max-width:760px){
+@media(max-width:900px){
  #login{grid-template-columns:minmax(0,1fr);grid-template-rows:66px auto minmax(0,1fr) auto;grid-template-areas:"header" "hero" "main" "footer";overflow-x:hidden}
  #login>header{height:66px;padding:0 20px}
  #login>header>img{width:150px;max-height:44px}
@@ -923,6 +923,40 @@ button,.btn,.pill,.user-status-action,.tile .lbl,.seg button,.location-toggle,.t
 }
 
 .app>header>img,.welcome>img{mix-blend-mode:multiply}
+
+.disc-back:has(>.demo-modal),.disc-back:has(>.project-disclaimer-modal){background:rgba(35,25,21,.76)}
+.demo-modal,.project-disclaimer-modal{
+ background:#fffaf0;
+ color:#2d2420;
+ border:1px solid #dbcdb8;
+ border-top:6px solid #e0a331;
+ border-radius:4px;
+ box-shadow:0 20px 55px rgba(31,13,9,.35);
+ padding:30px 34px;
+}
+.demo-modal h2,.project-disclaimer-modal h2{color:#a41422;font:700 clamp(28px,3vw,38px)/1.1 var(--serif);text-shadow:1px 1px 0 #e0a331;margin-bottom:16px}
+.demo-modal .demo-subtitle,.project-disclaimer-modal p{color:#59483e;line-height:1.55}
+.demo-modal .demo-subtitle{margin-bottom:10px}
+.demo-modal .demo-cards{margin-top:22px;gap:14px}
+.demo-modal .demo-role{border:1px solid #e0d1bb;border-left:4px solid #a41422;border-radius:4px;background:#f7f0df;padding:18px}
+.demo-modal .demo-role h3{color:#a41422;font-size:20px}
+.demo-modal .demo-role p{color:#59483e}
+.demo-modal .demo-role .btn,.demo-modal .disc-btns .btn,.project-disclaimer-modal .disc-btns .btn{border-radius:4px;font-family:var(--sans);font-weight:700}
+.demo-modal .demo-role .btn{border:1px solid #a41422;background:#fffaf0;color:#a41422}
+.demo-modal .demo-role .btn:hover:not(:disabled){background:#a41422;color:#fffaf0}
+.demo-modal .demo-role .btn:disabled{background:#e5e2dd;color:#555;border-color:#bdb8b0}
+.demo-modal .disc-btns,.project-disclaimer-modal .disc-btns{border-top:1px solid #e0d1bb;padding-top:18px;margin-top:22px}
+.demo-modal .disc-btns .btn,.project-disclaimer-modal .disc-btns .btn.alt{border:1px solid #a41422;background:#fffaf0;color:#a41422}
+.demo-modal .disc-btns .btn:hover:not(:disabled),.project-disclaimer-modal .disc-btns .btn.alt:hover:not(:disabled){background:#f4e3d6;color:#8e0710}
+.project-disclaimer-modal .disc-btns .btn:not(.alt){background:#a41422;color:#fffaf0}
+.project-disclaimer-modal .disc-btns .btn:not(.alt):hover{background:#8e0710}
+.project-disclaimer-modal .disc-about{border-top:1px solid #dfcfb9;background:#f7f0df;padding:16px;margin-top:18px}
+.project-disclaimer-modal .disc-about dt{color:#8e0710}
+.demo-modal button:focus-visible,.project-disclaimer-modal button:focus-visible{outline:3px solid #d99516;outline-offset:3px}
+@media(max-width:700px){
+ .demo-modal,.project-disclaimer-modal{padding:22px 20px}
+ .demo-modal .demo-role{padding:15px}
+}
 
 .restaurant-status .priority-count{border-radius:4px;box-shadow:none}
 .restaurant-status .priority-count.zero{opacity:1}

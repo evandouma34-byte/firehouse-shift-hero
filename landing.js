@@ -2,6 +2,20 @@
   const landing = document.getElementById('landing');
   const login = document.getElementById('login');
 
+  document.querySelectorAll('.app>header>img').forEach(logo => {
+    const lockup = document.createElement('span');
+    lockup.className = 'app-header-lockup';
+    const divider = document.createElement('span');
+    divider.className = 'app-header-divider';
+    divider.setAttribute('aria-hidden', 'true');
+    divider.textContent = '\u00d7';
+    const name = document.createElement('span');
+    name.className = 'app-header-name';
+    name.textContent = 'Shift Hero';
+    lockup.append(divider, name);
+    logo.insertAdjacentElement('afterend', lockup);
+  });
+
   function enterApp() {
     document.body.classList.remove('landing-active');
     window.scrollTo(0, 0);

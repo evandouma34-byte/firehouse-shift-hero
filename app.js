@@ -3351,7 +3351,7 @@ drawInsights=function(user){
    aboutBtn=h('button',{class:'btn alt',type:'button',text:'About Shift Hero','aria-expanded':'false',onclick:()=>{const on=about.classList.toggle('hidden');aboutBtn.setAttribute('aria-expanded',String(!on))}}),
    closeBtn=h('button',{class:'btn',type:'button',text:'Close',onclick:close});
   backdrop=h('div',{class:'disc-back',onclick:e=>{if(e.target===backdrop)close()}},
-   h('div',{class:'disc-modal',role:'dialog','aria-modal':'true','aria-labelledby':'discTitle'},
+   h('div',{class:'disc-modal project-disclaimer-modal',role:'dialog','aria-modal':'true','aria-labelledby':'discTitle'},
     h('h2',{id:'discTitle',text:'Project Disclaimer'}),TEXT.map(text=>h('p',{text})),about,h('div',{class:'disc-btns'},aboutBtn,closeBtn)));
   document.body.append(backdrop);document.addEventListener('keydown',onKey);closeBtn.focus()
  };
