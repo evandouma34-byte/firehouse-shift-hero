@@ -25,6 +25,12 @@ back:'<path d="M10 6l-6 6 6 6M4 12h16"/>',
 info:'<circle cx="12" cy="12" r="10"/><path d="M12 11v6M12 7v.5"/>',
 clipboard:'<rect x="5" y="5" width="14" height="17" rx="2"/><path d="M9 5V3h6v2M8 11l2 2 5-5M8 17h8"/>',
 thermometer:'<path d="M14 14.76V5a3 3 0 00-6 0v9.76a5 5 0 106 0z"/><path d="M11 11v7M16 7h2M16 10h2"/>',
+chart:'<path d="M4 20V4M4 20h17M8 16l4-5 3 2 5-7"/><path d="M17 6h3v3"/>',
+scorecard:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/>',
+visits:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 9h18M8 14l2 2 5-5"/>',
+entries:'<path d="M5 3h10l4 4v14H5z"/><path d="M15 3v4h4M8 12h8M8 16h8"/>',
+actions:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
+myactions:'<circle cx="12" cy="7" r="3"/><path d="M5 20c0-4 3-6 7-6M16 17l2 2 4-4"/>',
 usr:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
 function ico(k){const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 24 24');s.innerHTML=IC[k];return s}
 
@@ -196,7 +202,8 @@ function dailySubmissionPanel(module,user,kind){
      });
     if(!all.length||missing.length){
      error.textContent=all.length?'Enter a temperature for every item before submitting. Missing: '+missing.map(item=>item.text).join(', ')+'.':'Add items in the Admin Portal before submitting.';
-     error.focus();return
+     const first=[...$('mc').querySelectorAll('input')].find(input=>input.getAttribute('aria-label')==='Temperature for '+(missing[0]&&missing[0].text));
+     if(first)first.focus();else error.focus();return
     }
     error.textContent=''
    }
@@ -218,9 +225,13 @@ function dailySubmissionPanel(module,user,kind){
     t('Unable to submit '+kind.toLowerCase()+'. Browser storage may be full.');return
    }
     const outstanding=incompleteSubmissionItems(module,snapshot.status,snapshot.definitions).length;
-    button.textContent=option[2]+' Submitted';button.disabled=true;note.textContent=outstanding?'Submitted with '+outstanding+' outstanding item'+(outstanding===1?'':'s')+'.':'Submitted and marked complete.';
+    const submittedLocation=selectedDailyLocation(user),submittedDate=selectedDailyDate(user);
+    button.textContent=option[2]+' Submitted';button.disabled=true;note.textContent=(outstanding?'Submitted with '+outstanding+' outstanding item'+(outstanding===1?'':'s')+'.':'Submitted and marked complete.')+' Restaurant: '+(submittedLocation?submittedLocation.name:'No restaurant selected')+' · Date: '+submittedDate+'. Later edits do not change this submitted record.';
    renderDailyProgress(user);t(kind+(outstanding?' submitted with outstanding items.':' submitted and marked complete.')+(added.length?' '+added.length+' action item'+(added.length===1?'':'s')+' created.':''));
-   if(added.length&&hasDashboardPermission(user,'actions'))result.replaceChildren(h('button',{class:'btn alt sm2',type:'button',text:added.length+' action item'+(added.length===1?'':'s')+' created · View in Action Center ›',onclick:()=>openActionItems(user)}))
+   result.replaceChildren(...[
+    submittedLocation&&hasDashboardPermission(user,'entries')?h('button',{class:'btn alt sm2',type:'button',text:'View Submitted Entry',onclick:()=>{$('mt').textContent='View Entries';$('md').textContent='Review submitted walkthroughs, checklists, and temperature logs by date and restaurant.';drawEntriesPage(user,submittedDate,submittedLocation.id,{module,status,storeId:submittedLocation.id});show('mod')} }):null,
+    h('button',{class:'btn alt sm2',type:'button',text:'Return to Dashboard',onclick:()=>show('home')}),
+    added.length&&hasDashboardPermission(user,'actions')?h('button',{class:'btn alt sm2',type:'button',text:added.length+' action item'+(added.length===1?'':'s')+' created · View in Action Center ›',onclick:()=>openActionItems(user)}):null].filter(Boolean))
   }}),
   result=h('div',{class:'btns left'}),error=h('p',{class:'err',role:'alert',tabindex:'-1'}),
   savedSnapshot=status.submissionSnapshots&&status.submissionSnapshots[module],
@@ -260,9 +271,9 @@ function renderDailyProgress(user){
   S.dailyLocationSelection[user.id]=event.target.value;
   if(!save()){S.dailyLocationSelection[user.id]=previous;t('Unable to save the selected restaurant.');return}
   renderDailyProgress(user)
- }},stores.map(location=>h('option',{value:location.id,text:locationPath(location)}))):null;
+ }},stores.map(location=>h('option',{value:location.id,text:location.name+(locationPath(location)!==location.name?' — '+locationPath(location):'')}))):null;
  if(storeSelect&&selected)storeSelect.value=selected.id;
- const storeSelector=storeSelect?h('label',{class:'daily-progress-store'},h('span',{text:'Restaurant'}),storeSelect):selected?h('div',{class:'daily-progress-store-name'},h('span',{text:'Restaurant'}),h('b',{text:locationPath(selected)})):null;
+ const storeSelector=storeSelect?h('label',{class:'daily-progress-store'},h('span',{text:'Restaurant'}),storeSelect):selected?h('div',{class:'daily-progress-store-name'},h('span',{text:'Restaurant'}),h('b',{text:selected.name}),locationPath(selected)!==selected.name?h('small',{text:locationPath(selected)}):null):null;
  const shiftDate=days=>{
   const base=new Date(year,month-1,day+days);
   datePicker.value=base.getFullYear()+'-'+String(base.getMonth()+1).padStart(2,'0')+'-'+String(base.getDate()).padStart(2,'0');
@@ -277,14 +288,14 @@ function renderDailyProgress(user){
  const controls=$('dailyControls');
  if(controls)controls.replaceChildren(dateTools,storeSelector);
  root.replaceChildren(
-  h('div',{class:'daily-progress-head'},h('div',null,h('h3',{id:'dailyProgressTitle',text:"Today's Progress"}),h('p',{class:'daily-progress-date',text:date.toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'})})),h('span',{class:'daily-progress-count',text:done+' of '+available.length+' complete'})),
+  h('div',{class:'daily-progress-head'},h('div',null,h('h3',{id:'dailyProgressTitle',text:isToday?"Today's Progress":'Progress for Selected Date'}),h('p',{class:'daily-progress-date',text:date.toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'})})),h('span',{class:'daily-progress-count',text:done+' of '+available.length+' complete'})),
   h('div',{class:'daily-progress-body'},
    groups.length?h('div',{class:'daily-progress-list'},groups.map(([title,options])=>h('section',{class:'daily-progress-group'},h('h4',{text:title}),   options.slice().sort((a,b)=>dailyOptionComplete(a,status)-dailyOptionComplete(b,status)).map(option=>{
     const complete=dailyOptionComplete(option,status),
      snapshot=status.submissionSnapshots&&status.submissionSnapshots[option[1]],
      outstanding=complete&&/^(walk_|check_)/.test(option[1])?incompleteSubmissionItems(option[1],snapshot?snapshot.status:status,snapshot?snapshot.definitions:submissionDefinitions(option[1])).length:0,
      open=()=>openDashboardOption(option[1]);
-    return h('div',{class:'daily-progress-item'+(complete?' done':' needed'),role:'button',tabindex:'0','aria-label':itemName(option)+(complete?(outstanding?' submitted with '+outstanding+' outstanding':' submitted'):' needed')+', open',onclick:open,onkeydown:event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();open()}}},h('span',{text:itemName(option)}),h('small',{text:complete?(outstanding?'Submitted · '+outstanding+' outstanding':'Complete'):'Needed ›'}))
+    return h('div',{class:'daily-progress-item'+(complete?(outstanding?' outstanding':' done'):' needed'),role:'button',tabindex:'0','aria-label':itemName(option)+(complete?(outstanding?' submitted with '+outstanding+' outstanding':' submitted'):' needed')+', open',onclick:open,onkeydown:event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();open()}}},h('span',{text:itemName(option)}),h('small',{text:complete?(outstanding?'Submitted · '+outstanding+' outstanding':'Complete'):'Needed ›'}))
   })))):h('p',{class:'daily-progress-empty',text:'No checklists, walkthroughs, or temperature logs are assigned to your account.'}),
    h('div',{class:'daily-progress-chart-wrap'},h('div',{class:'daily-progress-chart',role:'img','aria-label':percent+' percent of assigned daily logs, checklists, and walkthroughs completed',style:'--completion:'+percent+'%'},h('span',{text:percent+'%'})),h('span',{class:'daily-progress-chart-label',text:'Daily Completion'}))
   ),
@@ -583,17 +594,21 @@ function generateWalkthroughActions(module,status,dateKey,location){
  return added
 }
 const ACTION_STATUSES=[['Open','Open'],['In Progress','In Progress'],['Done','Completed']];
-let ACTION_FILTER=null;
-function openActionItems(user,level){
+let ACTION_FILTER=null,ACTION_VIEW_FILTER='all',ACTION_HIGHLIGHT=null;
+function openActionItems(user,level,actionId){
  if(!user||!hasDashboardPermission(user,'actions')){t('You do not have permission to access this function.');return}
  ACTION_FILTER=PRIORITY_ORDER.includes(level)?level:null;
+ ACTION_VIEW_FILTER='all';ACTION_HIGHLIGHT=actionId||null;
  $('mt').textContent='Action Center';
  $('md').textContent='Review action items created from walkthroughs and update their status.';
- drawActionItems(user);show('mod')
+ drawActionItems(user);show('mod');
+ const highlighted=$('mc').querySelector('.action-highlight');
+ if(highlighted){highlighted.scrollIntoView({block:'center'});highlighted.focus({preventScroll:true})}
 }
 function drawActionItems(user){
  const location=selectedDailyLocation(user),locationId=location&&location.id||'default',
-  mine=S.actionItems.filter(action=>action.locationId===locationId&&!actionVerified(action)&&(!ACTION_FILTER||(PRIORITY_LEVELS[action.level]?action.level:'medium')===ACTION_FILTER)),
+  mine=S.actionItems.filter(action=>action.locationId===locationId&&!actionVerified(action)&&(!ACTION_FILTER||(PRIORITY_LEVELS[action.level]?action.level:'medium')===ACTION_FILTER)&&
+   (ACTION_VIEW_FILTER==='all'||ACTION_VIEW_FILTER==='mine'&&String(action.ownerId)===String(user.id)||ACTION_VIEW_FILTER==='unassigned'&&!action.ownerId||ACTION_VIEW_FILTER==='overdue'&&(actionTiming(action)||{}).state==='late')),
   setStatus=(action,status)=>{
    const previous=action.status,previousCompleted=action.completed;
    action.status=status;
@@ -601,7 +616,14 @@ function drawActionItems(user){
    if(!save()){action.status=previous;if(previousCompleted===undefined)delete action.completed;else action.completed=previousCompleted;t('Unable to update the action item. Browser storage may be full.');return false}
    renderPriorityPanel(user);return true
   },
-  filterBar=ACTION_FILTER?h('div',{class:'btns left'},h('span',{class:'priority-status '+ACTION_FILTER,text:PRIORITY_LEVELS[ACTION_FILTER][0]+' '+PRIORITY_LEVELS[ACTION_FILTER][1]+' only'}),h('button',{class:'btn alt sm2',type:'button',text:'Show all',onclick:()=>{ACTION_FILTER=null;drawActionItems(user)}})):null,
+  prioritySelect=h('select',{'aria-label':'Filter actions by priority'},h('option',{value:'all',text:'All priorities'}),PRIORITY_ORDER.map(level=>h('option',{value:level,text:PRIORITY_LEVELS[level][1]}))),
+  viewSelect=h('select',{'aria-label':'Filter actions by assignment or due date'},[['all','All actions'],['mine','Assigned to me'],['unassigned','Unassigned'],['overdue','Overdue']].map(([value,text])=>h('option',{value,text}))),
+  actionStores=dailyLocationsForUser(user),
+  actionStoreSelect=actionStores.length>1?h('select',{'aria-label':'Change restaurant for Action Center'},actionStores.map(store=>h('option',{value:store.id,text:locationPath(store)}))):null,
+  filterBar=panel(null,h('p',{class:'note',text:'Restaurant: '+(location?locationPath(location):'No restaurant selected')+' · Showing current actions, regardless of the dashboard date.'}),
+   actionStoreSelect?h('div',{class:'action-store'},field('Restaurant',actionStoreSelect)):null,
+   h('div',{class:'action-filters'},field('Show',viewSelect),field('Priority',prioritySelect),
+    h('button',{class:'btn alt sm2',type:'button',text:'Show all actions',onclick:()=>{ACTION_FILTER=null;ACTION_VIEW_FILTER='all';ACTION_HIGHLIGHT=null;drawActionItems(user)}}))),
   sections=ACTION_STATUSES.map(([value,label])=>{
    const actions=mine.filter(action=>(ACTION_STATUSES.some(entry=>entry[0]===action.status)?action.status:'Open')===value)
     .sort((a,b)=>PRIORITY_ORDER.indexOf(a.level)-PRIORITY_ORDER.indexOf(b.level)||a.created-b.created),
@@ -614,16 +636,29 @@ function drawActionItems(user){
     select.onchange=()=>{
      if(setStatus(action,select.value))drawActionItems(user);else select.value=value
     };
-    return h('div',{class:'walk-task-row action-row '+levelKey+(value==='Done'?' done':'')},
+    const highlighted=ACTION_HIGHLIGHT===action.id;
+    return h('div',{class:'walk-task-row action-row '+levelKey+(value==='Done'?' done':'')+(highlighted?' action-highlight':''),...(highlighted?{tabindex:'-1'}:{})},
      h('div',{class:'walk-task-main'+(value==='Done'?' done':'')},h('span',null,h('b',{text:action.description}),h('small',{text:' '+action.title+' · '+action.category+' · '+action.date}))),
      h('span',{class:'priority-status '+levelKey,text:level[0]+' '+level[1]}),
-     h('div',{class:'action-quick'},value==='Open'?move('In Progress','Start'):null,value!=='Done'?move('Done','Done'):move('Open','Reopen'),select),
-     actionExtras(action,user))
+     h('div',{class:'action-quick'},value==='Open'?move('In Progress','Start'):null,value!=='Done'?move('Done','Done'):move('Open','Reopen')),
+     h('details',{class:'action-details',...(highlighted?{open:''}:{})},h('summary',{text:'Details and status · '+(action.ownerName||'Unassigned')+(actionTiming(action)?' · Due '+scDate(actionTiming(action).due):'')}),
+      h('label',{class:'action-status-label'},'Status',select),actionExtras(action,user)))
    }):[empty('No '+label.toLowerCase()+' action items.')];
    if(value==='Done'&&actions.length)return h('details',{class:'panel action-done'},h('summary',{text:label+' ('+actions.length+')'}),rows);
    return panel(label+' ('+actions.length+')',rows)
   });
- $('mc').replaceChildren(...[filterBar,...sections].filter(Boolean))
+ prioritySelect.value=ACTION_FILTER||'all';viewSelect.value=ACTION_VIEW_FILTER;
+ if(actionStoreSelect){
+  if(location)actionStoreSelect.value=location.id;
+  actionStoreSelect.onchange=()=>{
+   const previous=S.dailyLocationSelection[user.id];S.dailyLocationSelection[user.id]=actionStoreSelect.value;
+   if(!save()){if(previous===undefined)delete S.dailyLocationSelection[user.id];else S.dailyLocationSelection[user.id]=previous;actionStoreSelect.value=location?location.id:'';t('Unable to change the selected restaurant.');return}
+   ACTION_HIGHLIGHT=null;renderDailyProgress(user);drawActionItems(user)
+  }
+ }
+ prioritySelect.onchange=()=>{ACTION_FILTER=prioritySelect.value==='all'?null:prioritySelect.value;ACTION_HIGHLIGHT=null;drawActionItems(user)};
+ viewSelect.onchange=()=>{ACTION_VIEW_FILTER=viewSelect.value;ACTION_HIGHLIGHT=null;drawActionItems(user)};
+ $('mc').replaceChildren(filterBar,...sections)
 }
 function renderTodaysPriorities(user){
  const root=$('todaysPriorities');
@@ -636,9 +671,9 @@ function renderTodaysPriorities(user){
   titles={critical:'Critical Actions',high:'High Priority Actions',medium:'Medium Priority Actions',low:'Low Priority Actions'};
  root.replaceChildren(...[
   groups.length?h('div',{class:'daily-progress-list'},groups.map(([level,actions])=>h('section',{class:'daily-progress-group'},h('h4',{text:PRIORITY_LEVELS[level][0]+' '+titles[level]}),
-   actions.map(action=>h('div',{class:'daily-progress-item action-link '+level,role:'button',tabindex:'0',onclick:()=>openActionItems(user,null),onkeydown:event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openActionItems(user,null)}}},h('span',{text:action.description}),h('small',{text:action.status==='In Progress'?'In Progress':action.category})))))):h('p',{class:'daily-progress-empty all-clear',text:'✅ No open actions. Items missed in a walkthrough appear here.'}),
+   actions.map(action=>h('div',{class:'daily-progress-item action-link '+level,role:'button',tabindex:'0','aria-label':action.description+'; open Action Center',onclick:()=>openActionItems(user,null,action.id),onkeydown:event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openActionItems(user,null,action.id)}}},h('span',{text:action.description}),h('small',{text:(action.status==='In Progress'?'In Progress':action.category)+' · Open Action Center ›'})))))):h('p',{class:'daily-progress-empty all-clear',text:'✅ No open actions. Items missed in a walkthrough appear here.'}),
   open.length>shown.length?h('p',{class:'daily-progress-note',text:'Showing '+shown.length+' of '+open.length+' open actions.'}):null,
-  h('div',{class:'btns left'},h('button',{class:'btn priority-view-btn',type:'button',text:'View All',onclick:()=>openActionItems(user)}))
+  h('div',{class:'btns left'},h('button',{class:'btn priority-view-btn',type:'button',text:'Open Action Center',onclick:()=>openActionItems(user)}))
  ].filter(Boolean))
 }
 const READINESS_PENALTY={critical:10,high:5,medium:2,low:1};
@@ -671,7 +706,9 @@ function renderPriorityPanel(user){
    h('div',{class:'readiness-score'},h('h4',{text:'Restaurant Readiness'}),h('b',{text:readiness.score+'%'})),
    h('div',null,h('div',{class:'readiness-state',text:readiness.state[1]+' '+readiness.state[2]}),
     activeParts.length?h('div',{class:'readiness-parts',title:'Critical −10, High −5, Medium −2, Low −1 per open action item'},activeParts.map(part=>h('span',{text:PRIORITY_LEVELS[part.level][0]+' '+PRIORITY_LEVELS[part.level][1]+': '+part.count+' open (−'+part.penalty+')'}))):null,
-    logs.length&&logsDone<logs.length?h('div',{class:'readiness-note',text:'Based on open action items only · '+logsDone+' of '+logs.length+' logs done today'}):null)))
+    h('div',{class:'readiness-note',text:'Based on current open action items only.'}),
+    logs.length?h('div',{class:'readiness-note',text:logsDone+' of '+logs.length+' logs submitted '+(selectedDailyDate(user)===todayDateKey()?'today':'on the selected date')+'; logs do not affect this score.'}):null,
+    h('details',{class:'readiness-explanation'},h('summary',{text:'How is this calculated?'}),h('p',{text:'Starting at 100%, subtract 10 points per critical, 5 per high, 2 per medium, and 1 per low open action. The score cannot fall below 0%. Ready: 90–100%; Needs Attention: 75–89%; Critical: below 75%.'})))))
 }
 function managerDefinitions(module){return module==='mvr'?S.mvrDefinitions:module==='food_order'?S.foodOrderDefinitions:module.indexOf('temp_')===0?temperatureItemsFor(module):S.checklistDefinitions[module]}
 const items=k=>S.d[k];
@@ -697,9 +734,53 @@ async function hashPassword(password,salt){
 }
 
 /* ---------- shared UI bits ---------- */
-function field(label,input){return h('div',null,h('label',{class:'l'},label),input)}
+let fieldId=0;
+function fieldLabel(label,input,required){
+ if(!input.id)input.id='field-'+(++fieldId);
+ return h('label',{class:'l',for:input.id},label,required?' ':null,required?h('i',{text:'*'}):null)
+}
+function field(label,input){return h('div',null,fieldLabel(label,input),input)}
 function sel(opts,val,fn){const s=h('select',null,opts.map(o=>h('option',{value:o,text:o})));s.value=val;if(fn)s.onchange=()=>fn(s.value);return s}
 function panel(title,...k){return h('div',{class:'panel'},title?h('h3',{text:title}):null,k)}
+function sectionNavigation(panels){
+ const sections=panels.filter(node=>node&&node.classList&&node.classList.contains('panel')&&node.querySelector(':scope > h3'));
+ if(sections.length<2)return null;
+ const links=sections.map(section=>{
+  const title=section.querySelector(':scope > h3').textContent,
+   button=h('button',{class:'pill',type:'button',onclick:()=>{section.scrollIntoView({block:'start'});section.setAttribute('tabindex','-1');section.focus({preventScroll:true})}}),
+   update=()=>{
+    const checks=[...section.querySelectorAll('.walk-task-main input[type=checkbox]')],
+     temperatures=[...section.querySelectorAll('input[type=number][required]')],
+     rating=section.querySelector('.mvr-rate[role=group]'),
+     unchecked=checks.filter(input=>!input.checked).length,
+     missing=temperatures.filter(input=>input.value.trim()===''||!Number.isFinite(Number(input.value))).length,
+     suffix=unchecked?unchecked+' unchecked':missing?missing+' missing':rating&&!rating.querySelector('[aria-pressed=true]')?'Not rated':'';
+    button.textContent=title+(suffix?' · '+suffix:'')
+   };
+  section.addEventListener('change',update);section.addEventListener('input',update);section.addEventListener('click',update);update();return button
+ });
+ return h('nav',{class:'section-navigation','aria-label':'Form sections'},h('b',{text:'Jump to section'}),h('div',null,links))
+}
+function dailyContextControls(user,module,location,dateKey){
+ const stores=dailyLocationsForUser(user),dateInput=h('input',{type:'date',value:dateKey,'aria-label':'Change date for this form'}),
+  storeSelect=stores.length>1?h('select',{'aria-label':'Change restaurant for this form'},stores.map(store=>h('option',{value:store.id,text:locationPath(store)}))):null;
+ if(storeSelect&&location)storeSelect.value=location.id;
+ const change=(key,value,control,previousValue)=>{
+  const explanation=$('mc').querySelector('textarea[aria-label="Explanation for incomplete checklist items"]'),
+   correction=$('mc').querySelector('.corr:not(.hidden):not(.done) .frm');
+  if((explanation&&explanation.value.trim()||correction)&&!window.confirm('Changing the restaurant or date discards any unsubmitted explanation or unsaved corrective action. Continue?')){control.value=previousValue;return}
+  const previous=S[key][user.id];S[key][user.id]=value;
+  if(!save()){if(previous===undefined)delete S[key][user.id];else S[key][user.id]=previous;control.value=previousValue;t('Unable to change the selected restaurant or date.');return}
+  renderDailyProgress(user);openDashboardOption(module)
+ };
+ dateInput.onchange=()=>{
+  const value=dateInput.value,parts=value.split('-').map(Number),parsed=new Date(parts[0],parts[1]-1,parts[2]);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(value)||parsed.getFullYear()!==parts[0]||parsed.getMonth()!==parts[1]-1||parsed.getDate()!==parts[2]){dateInput.value=dateKey;t('Choose a valid date.');return}
+  change('dailyDateSelection',value,dateInput,dateKey)
+ };
+ if(storeSelect)storeSelect.onchange=()=>change('dailyLocationSelection',storeSelect.value,storeSelect,location?location.id:'');
+ return h('details',{class:'context-switch'},h('summary',{text:'Change restaurant or date'}),h('div',{class:'action-filters'},storeSelect?field('Restaurant',storeSelect):null,field('Date',dateInput)))
+}
 function bar(p,ok){return h('div',{class:'bar'},h('i',{style:'width:'+Math.max(0,Math.min(100,p))+'%'+(ok===false?';background:#999':'')}))}
 function tag(txt,cls){return h('span',{class:'tag'+(cls?' '+cls:'')},txt)}
 function empty(msg){return h('p',{class:'note',text:msg})}
@@ -731,6 +812,19 @@ function openDashboardOption(module){
  const option=DASHBOARD_ACCESS.find(item=>item[1]===module),user=items('users').find(account=>account.id===CURRENT_USER_ID);
  if(!option||!user||!hasDashboardPermission(user,module)){t('You do not have permission to access this function.');return}
  $('mt').textContent=option[2];$('md').textContent=option[3];
+ const showDaily=content=>{
+  const location=selectedDailyLocation(user),dateKey=selectedDailyDate(user),[year,month,day]=dateKey.split('-').map(Number),
+   date=new Date(year,month-1,day).toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  $('mc').replaceChildren(...[h('section',{class:'daily-context','aria-label':'Current restaurant and date'},
+   h('div',null,h('span',{text:'Restaurant'}),h('strong',{text:location?location.name:'No restaurant selected'}),location&&locationPath(location)!==location.name?h('small',{text:locationPath(location)}):null),
+   h('div',null,h('span',{text:'Date'}),h('strong',{text:date})),
+   dailyContextControls(user,module,location,dateKey)),
+   h('div',{class:'daily-save-note'},h('p',{text:(module.indexOf('check_')===0?'Checklist selections are saved when changed. Explanations are recorded when submitted.':
+    module.indexOf('walk_')===0?'Selections, notes, and photos are saved when changed.':
+    module==='food_order'?'Readings and quantities are saved when changed.':
+    'Readings are saved when changed. Corrective actions require Save Corrective Action.')}),h('p',{text:'Submit to mark this log complete. Later changes do not update the submitted record.'})),sectionNavigation(content),...content].filter(Boolean));
+  show('mod')
+ };
  if(module.indexOf('walk_')===0){
   const status=dailyStatusForUser(user);
   status.walkthroughItems=status.walkthroughItems||{};
@@ -777,8 +871,7 @@ function openDashboardOption(module){
     }):empty('No items in this category yet. Add items in the Admin Portal.'))):
     [empty('No walkthrough categories or items yet. Add them in the Admin Portal.')];
   content.push(dailySubmissionPanel(module,user,'Walkthrough'));
-  $('mc').replaceChildren(...content);
-  show('mod');
+  showDaily(content);
   return
  }
  if(module.indexOf('check_')===0){
@@ -804,8 +897,7 @@ function openDashboardOption(module){
     }):empty('No items in this category yet. Add items in the Admin Portal.'))):
     [empty('No checklist categories or items yet. Ask an administrator to add them.')];
   content.push(dailySubmissionPanel(module,user,'Checklist'));
-  $('mc').replaceChildren(...content);
-  show('mod');
+  showDaily(content);
   return
  }
  if(TEMP_MODULES.includes(module)){
@@ -829,12 +921,11 @@ function openDashboardOption(module){
      updateWarning=()=>{flag.textContent=tempFlag(item,input.value);input.classList.toggle('temp-warn',!!flag.textContent)},
      corrective=tempCorrectionBox(module,item,status,()=>readings[item.id]);
      input.addEventListener('input',updateWarning);updateWarning();
-     return h('div',{class:'frm walk-item-row'},field(item.text,input),flag,corrective.element)
+     return h('div',{class:'frm walk-item-row'},field(item.text+' (°F)',input),flag,corrective.element)
     }):empty('No items in this category yet. Add items in the Admin Portal.'))):
     [empty('No temperature log items yet. Ask an administrator to add them.')];
   content.push(dailySubmissionPanel(module,user,'Temperature Log'));
-  $('mc').replaceChildren(...content);
-  show('mod');
+  showDaily(content);
   return
  }
  if(module==='food_order'){
@@ -867,19 +958,17 @@ function openDashboardOption(module){
       flag=h('small',{class:'temp-flag','aria-live':'polite'}),
       updateWarning=()=>{flag.textContent=tempFlag(item,temperature.value,false);temperature.classList.toggle('temp-warn',!!flag.textContent)};
      temperature.addEventListener('input',updateWarning);updateWarning();
-     return h('div',{class:'frm walk-item-row'},field(item.text,input),h('div',null,field('Temperature (required)',temperature),flag))
+     return h('div',{class:'frm walk-item-row'},field(item.text,input),h('div',null,field('Temperature (°F, required)',temperature),flag))
     }):empty('No items in this category yet. Add items in the Admin Portal.'))):
     [empty('No food order items yet. Ask an administrator to add them.')];
   content.push(dailySubmissionPanel(module,user,'Food Order'));
-  $('mc').replaceChildren(...content);
-  show('mod');
+  showDaily(content);
   return
  }
  const isFoodOrder=module==='food_order',isTemperatureLog=module.indexOf('temp_')===0,
   kind=isFoodOrder?'Food Order':isTemperatureLog?'Temperature Log':'Checklist',
   description=isFoodOrder?'Food order entry tools are not available yet.':isTemperatureLog?'Temperature log entry tools are not available yet.':'Detailed checklist tasks are not available yet.';
- $('mc').replaceChildren(panel(option[2],empty(description)),dailySubmissionPanel(module,user,kind));
- show('mod')
+ showDaily([panel(option[2],empty(description)),dailySubmissionPanel(module,user,kind)])
 }
 
 /* ---------- admin: content manager ---------- */
@@ -888,6 +977,7 @@ function renderAdmin(){
  const g=$('ag'),makeTile=(label,description,icon,onclick)=>h('button',{class:'tile',onclick},
   h('span',{class:'ico'},ico(icon)),h('span',{class:'lbl'},label,h('small',{text:description})),h('span',{class:'chev',text:'›'})),
   userTools=[
+   makeTile('Organization Management','View people by location and manage large networks','org',()=>openUsers('admin')),
    ...MODS.filter(module=>module.k==='users').map(module=>makeTile(module.name,'Add and manage users',module.ico,()=>openUsers('admin'))),
    makeTile('Location Management','Create and organize stores, offices, and regions','org',openLocations),
    makeTile('Role Management','Add or remove roles and choose the permissions each role receives','shield',openRoleManager)
@@ -895,16 +985,14 @@ function renderAdmin(){
   checklistTools=[['check_opening','Opening'],['check_midday','Mid-Day'],['check_closing','Closing']].map(([module,name])=>makeTile('Manage '+name+' Checklist Items','Add and organize categories and checklist items','clipboard',()=>openChecklistManager(module))),
   contentTools=[
    makeTile('Manage Walkthrough Items','Add and organize items shared by Morning and Evening Walkthroughs','clipboard',openWalkthroughManager),
-   checklistTools[0],
+   ...checklistTools,
    makeTile('Manage Temperature Log Items','Add and organize categories and items for Morning, Mid-Day, and Evening temperature logs','thermometer',()=>openChecklistManager('temperature_logs')),
-   checklistTools[1],
-   makeTile('Manage Food Order Temp. Items','Add and organize categories and food order items','clipboard',()=>openChecklistManager('food_order')),
-   checklistTools[2],
-   makeTile('Management Visit Item Manager','Add and organize review points for each Management Visit category','clipboard',()=>openChecklistManager('mvr'))
+   makeTile('Manage Food Order Temperature Items','Add and organize categories and food order items','clipboard',()=>openChecklistManager('food_order')),
+   makeTile('Manage Management Visit Items','Add and organize review points for each Management Visit category','clipboard',()=>openChecklistManager('mvr'))
   ];
  g.className='admin-groups';
  g.replaceChildren(
-  panel('FRUM',h('div',{class:'grid'},userTools)),
+  panel('Users, Locations & Roles',h('div',{class:'grid'},userTools)),
   panel('Content Management',h('div',{class:'grid'},contentTools))
  )
 }
@@ -1174,8 +1262,11 @@ let LOCATION_EXPANDED=new Set();
 let LOCATION_TREE_INITIALIZED=false;
 let LOCATION_ZOOM=1;
 let LOCATION_CHART_RESIZE=null;
+let LOCATION_RETURN_VIEW='admin';
+let LOCATION_DIRECTORY_SCOPE=null;
 function locationPath(location){const path=[],seen=new Set();while(location&&!seen.has(location.id)){seen.add(location.id);path.unshift(location.name);location=S.locations.find(item=>item.id===location.parentId)}return path.join(' / ')}
-function openLocations(){LOCATION_EDIT_ID=null;$('et').textContent='Location Management';$('ed').textContent='Create stores, offices, and regions, then organize them in an organization tree.';if(!LOCATION_TREE_INITIALIZED){const roots=S.locations.filter(location=>!S.locations.some(parent=>parent.id===location.parentId));roots.forEach(location=>LOCATION_EXPANDED.add(location.id));LOCATION_TREE_INITIALIZED=true}drawLocations();show('edit')}
+function locationScopeIds(id,includeChildren){const ids=new Set([id]);if(!includeChildren)return ids;let changed=true;while(changed){changed=false;S.locations.forEach(location=>{if(location.parentId&&ids.has(location.parentId)&&!ids.has(location.id)){ids.add(location.id);changed=true}})}return ids}
+function openLocations(focusId,returnView){LOCATION_EDIT_ID=null;LOCATION_RETURN_VIEW=returnView||'admin';LOCATION_DIRECTORY_SCOPE=focusId||null;$('et').textContent='Location Management';$('ed').textContent='Create stores, offices, and regions, then organize them in an organization tree.';$('eb').textContent=LOCATION_RETURN_VIEW==='um'?'Back to User Management':'Back to Admin Portal';if(!LOCATION_TREE_INITIALIZED){const roots=S.locations.filter(location=>!S.locations.some(parent=>parent.id===location.parentId));roots.forEach(location=>LOCATION_EXPANDED.add(location.id));LOCATION_TREE_INITIALIZED=true}if(focusId){let location=S.locations.find(item=>item.id===focusId);while(location){LOCATION_EXPANDED.add(location.id);location=S.locations.find(item=>item.id===location.parentId)}}drawLocations();show('edit')}
 function drawLocations(){
  if(LOCATION_CHART_RESIZE){LOCATION_CHART_RESIZE.disconnect();LOCATION_CHART_RESIZE=null}
  const all=S.locations,users=items('users'),container=$('ec'),name=h('input',{placeholder:'Enter a location name'}),type=sel(LOCATION_TYPES,'Store'),parent=h('select'),err=h('div',{class:'err'}),current=all.find(location=>location.id===LOCATION_EDIT_ID)||null;
@@ -1186,7 +1277,7 @@ function drawLocations(){
  if(current){name.value=current.name;type.value=current.type;parent.value=current.parentId||''}
  const roots=all.filter(location=>!all.some(parentLocation=>parentLocation.id===location.parentId)),locationChildren=new Map(all.map(location=>[location.id,[]])),directUserCounts=new Map(all.map(location=>[location.id,0])),userCounts=new Map();
  all.forEach(location=>{if(locationChildren.has(location.parentId))locationChildren.get(location.parentId).push(location)});
- users.forEach(user=>{if(directUserCounts.has(user.locationId))directUserCounts.set(user.locationId,directUserCounts.get(user.locationId)+1)});
+ users.forEach(user=>{const assigned=assignedLocationForUser(user);if(assigned&&directUserCounts.has(assigned.id))directUserCounts.set(assigned.id,directUserCounts.get(assigned.id)+1)});
  function countUsers(location,visiting){
   if(userCounts.has(location.id))return userCounts.get(location.id);
   if(visiting.has(location.id))return 0;
@@ -1204,12 +1295,12 @@ function drawLocations(){
   return h('li',{class:'location-branch'},h('div',{class:'location-node'},
    h('span',{class:'location-icon'},ico(icon)),
    h('span',{class:'location-info'},h('b',{text:location.name}),h('small',{text:location.type+' · '+assignedUsers+' assigned user'+(assignedUsers===1?'':'s')}),childLocations.length?h('button',{class:'location-toggle',type:'button','aria-expanded':String(LOCATION_EXPANDED.has(location.id)),text:(LOCATION_EXPANDED.has(location.id)?'− Hide ':'+ Show ')+childLocations.length+' child location'+(childLocations.length===1?'':'s'),onclick:()=>{if(LOCATION_EXPANDED.has(location.id))LOCATION_EXPANDED.delete(location.id);else LOCATION_EXPANDED.add(location.id);renderTree()}}):null),
-   h('span',{class:'location-actions'},h('button',{class:'pill gray',text:'Edit',onclick:()=>{LOCATION_EDIT_ID=location.id;drawLocations()}}),h('button',{class:'pill red',text:'Delete',onclick:()=>deleteLocation(location)}))),
+   h('span',{class:'location-actions'},h('button',{class:'pill gray',text:'View people',onclick:()=>openUsers('edit',location.id,true)}),h('button',{class:'pill gray',text:'Edit',onclick:()=>{LOCATION_EDIT_ID=location.id;drawLocations()}}),h('button',{class:'pill red',text:'Delete',onclick:()=>deleteLocation(location)}))),
    children.length?h('ul',{class:'location-children'},children):null)
  }
  function deleteLocation(location){
   if(all.some(child=>child.parentId===location.id)){t('Move or delete this location’s child locations first.');return}
-  if(users.some(user=>user.locationId===location.id)){t('Reassign this location’s users before deleting it.');return}
+  if(users.some(user=>assignedLocationForUser(user)?.id===location.id)){t('Reassign this location’s users before deleting it.');return}
   if(!window.confirm('Delete '+location.name+'?'))return;
   all.splice(all.indexOf(location),1);LOCATION_EXPANDED.delete(location.id);if(LOCATION_EDIT_ID===location.id)LOCATION_EDIT_ID=null;save();drawLocations();t('Location deleted.');
  }
@@ -1239,16 +1330,41 @@ function drawLocations(){
   h('button',{class:'pill red',text:'Fit chart',onclick:fitChart}),zoomLabel);
  renderTree();
  const treePanel=panel(null,phd('org','Organization Tree','Expand branches to explore locations. The chart stays contained in this panel; scroll or zoom to navigate larger networks.'),roots.length?h('div',null,treeTools,treeViewport):h('div',{class:'location-empty',text:'No locations yet. Create the first location below.'}));
+ const locationSearch=h('input',{type:'search',placeholder:'Search locations or assigned people…',oninput:drawDirectory});
+ const directoryType=sel(['All Types'].concat(LOCATION_TYPES),'All Types',drawDirectory),directoryScope=h('select',{onchange:drawDirectory});
+ directoryScope.replaceChildren(h('option',{value:'',text:'All locations'}),...all.map(location=>h('option',{value:location.id,text:locationPath(location)})));
+ if(all.some(location=>location.id===LOCATION_DIRECTORY_SCOPE))directoryScope.value=LOCATION_DIRECTORY_SCOPE;
+ const directoryBody=h('tbody'),directoryCount=h('p',{class:'note location-directory-count'}),directoryUserCache=new Map(),directoryUsers=location=>{if(!directoryUserCache.has(location.id)){const ids=locationScopeIds(location.id,true);directoryUserCache.set(location.id,users.filter(user=>{const assigned=assignedLocationForUser(user);return assigned&&ids.has(assigned.id)}))}return directoryUserCache.get(location.id)};
+ function drawDirectory(){
+  const query=locationSearch.value.trim().toLowerCase(),selectedScope=directoryScope.value,scopeIds=selectedScope?locationScopeIds(selectedScope,true):null;
+  const matches=all.filter(location=>{
+   if(directoryType.value!=='All Types'&&location.type!==directoryType.value)return false;
+   if(scopeIds&&!scopeIds.has(location.id))return false;
+   const path=locationPath(location).toLowerCase(),people=directoryUsers(location);
+   return !query||path.includes(query)||people.some(user=>(user.name+' '+user.email+' '+user.role).toLowerCase().includes(query));
+  }).sort((a,b)=>locationPath(a).localeCompare(locationPath(b)));
+  directoryCount.textContent=matches.length+' location'+(matches.length===1?'':'s')+' shown';
+  directoryBody.replaceChildren(...(matches.length?matches.map(location=>{const assigned=directoryUsers(location),direct=directUserCounts.get(location.id)||0;return h('tr',null,
+   h('td',null,h('strong',{text:location.name}),h('small',{class:'location-path',text:locationPath(location)})),
+   h('td',{text:location.type}),h('td',{text:String(direct)+' direct · '+assigned.length+' total'}),
+   h('td',null,h('button',{class:'pill gray',text:'View people',onclick:()=>openUsers('edit',location.id,true)}),h('button',{class:'pill gray',text:'Edit',onclick:()=>{LOCATION_EDIT_ID=location.id;drawLocations()}}))
+  )}):[h('tr',null,h('td',{colspan:'4',class:'note',text:'No locations match this search.'}))]));
+ }
+ drawDirectory();
+ const directoryPanel=panel(null,phd('store','Location Directory','Search and scope a location, then open its assigned people across the selected branch.'),
+  h('div',{class:'filters location-directory-filters'},h('div',{class:'fl grow'},fieldLabel('Search locations or people',locationSearch),locationSearch),h('div',{class:'fl'},fieldLabel('Location type',directoryType),directoryType),h('div',{class:'fl grow'},fieldLabel('Within location',directoryScope),directoryScope)),
+  directoryCount,h('div',{class:'tw'},h('table',{class:'dt location-directory'},h('thead',null,h('tr',null,['Location','Type','Assigned Users','Actions'].map(label=>h('th',{text:label})))),directoryBody)));
+ const treeSection=all.filter(location=>location.type==='Store').length>=20?h('details',{class:'location-tree-details'},h('summary',{text:'Open organization tree'}),treePanel):treePanel;
  const form=h('div',{class:'frm'},h('div',null,h('label',{class:'l'},'Location Name'),name),h('div',null,h('label',{class:'l'},'Location Type'),type),h('div',{class:'full'},h('label',{class:'l'},'Parent Location'),parent));
  const saveLocation=()=>{const locationName=name.value.trim(),locationType=type.value,parentId=parent.value||null;
   if(!locationName){err.textContent='Enter a location name.';return}
   if(all.some(location=>location.id!==LOCATION_EDIT_ID&&location.name.toLowerCase()===locationName.toLowerCase())){err.textContent='A location with that name already exists.';return}
   if(parentId&&(parentId===LOCATION_EDIT_ID||descendants.has(parentId)||!all.some(location=>location.id===parentId))){err.textContent='Choose a valid parent location.';return}
-  if(current){const oldName=current.name;current.name=locationName;current.type=locationType;current.parentId=parentId;if(oldName!==locationName)users.filter(user=>user.locationId===current.id).forEach(user=>{user.store=locationName})}
+  if(current){const oldName=current.name,assignedUsers=users.filter(user=>assignedLocationForUser(user)?.id===current.id);current.name=locationName;current.type=locationType;current.parentId=parentId;if(oldName!==locationName)assignedUsers.forEach(user=>{user.store=locationName})}
   else{all.push({id:'location-'+nid(),name:locationName,type:locationType,parentId});if(parentId)LOCATION_EXPANDED.add(parentId)}
   save();LOCATION_EDIT_ID=null;drawLocations();t(current?'Location updated.':'Location created.');
  };
- container.replaceChildren(treePanel,panel(LOCATION_EDIT_ID?'Edit Location':'Add Location',form,err,h('div',{class:'btns'},LOCATION_EDIT_ID?h('button',{class:'btn alt',text:'Cancel',onclick:()=>{LOCATION_EDIT_ID=null;drawLocations()}}):null,h('button',{class:'btn',text:LOCATION_EDIT_ID?'Save Location':'Create Location',onclick:saveLocation}))));
+ container.replaceChildren(directoryPanel,treeSection,panel(LOCATION_EDIT_ID?'Edit Location':'Add Location',form,err,h('div',{class:'btns'},LOCATION_EDIT_ID?h('button',{class:'btn alt',text:'Cancel',onclick:()=>{LOCATION_EDIT_ID=null;drawLocations()}}):null,h('button',{class:'btn',text:LOCATION_EDIT_ID?'Save Location':'Create Location',onclick:saveLocation}))));
  if(roots.length)fitChart();
  if(typeof ResizeObserver!=='undefined'&&roots.length){LOCATION_CHART_RESIZE=new ResizeObserver(fitChart);LOCATION_CHART_RESIZE.observe(treeViewport)}
 }
@@ -1272,8 +1388,8 @@ function drawEdit(){const m=MK[EDIT.k],all=items(m.k),c=$('ec'),seg=m.seg;
 /* ---------- user management ---------- */
 const LEVELS=['Corporate','Regional','Area','Restaurant'],LVL={Corporate:'Corporate',Regional:'Regional',Area:'Area Leadership',Restaurant:'Restaurants'};
 const ROLES=['System Administrator','Operations Director','Regional Director','Area Representative','Restaurant Manager','Assistant Manager','Shift Manager'];
-const PERMS=[['ops','Operations Portal','Legacy access default for accounts without individual dashboard permissions'],['um','User Management (Legacy)','Legacy access default for accounts without individual dashboard permissions'],['rep','Reports & Analytics','Legacy access default for accounts without individual dashboard permissions'],['admin','Admin Portal','Open the Admin Portal and manage locations and checklist, walkthrough, temperature log, and food order items']].concat(DASHBOARD_ACCESS.map(option=>[option[0],option[2],option[3]]));
-const UMS={level:'All Levels',role:'All Roles',region:'All Locations',status:'Active',q:'',sel:null};
+const PERMS=[['ops','Dashboard (Legacy)','Legacy access default for accounts without individual dashboard permissions'],['um','User Management (Legacy)','Legacy access default for accounts without individual dashboard permissions'],['rep','Reports & Analytics','Legacy access default for accounts without individual dashboard permissions'],['admin','Admin Portal','Open the Admin Portal and manage locations and checklist, walkthrough, temperature log, and food order items']].concat(DASHBOARD_ACCESS.map(option=>[option[0],option[2],option[3]]));
+const UMS={level:'All Levels',role:'All Roles',region:'All Locations',status:'Active',q:'',sel:null,scopeLocationId:null,scopeIncludeChildren:true,selectedIds:new Set()};
 function defaultRolePermissions(role){
  const all=PERMS.map(p=>p[0]),dashboard=DASHBOARD_ACCESS.map(o=>o[0]),perms={};
  const on=role==='System Administrator'?all:
@@ -1366,45 +1482,86 @@ function setHomeUser(user){
 const kv=(k,v)=>h('div',null,h('small',{text:k+': '}),h('b',{class:'kv',text:v}));
 function btnI(icon,text,cls,fn){return h('button',{class:'btn '+(cls||''),onclick:fn},ico(icon),text)}
 function phd(icon,title,sub){return h('div',{class:'phd'},h('span',{class:'ic'},ico(icon)),h('div',null,h('h3',{text:title}),h('p',{class:'note',text:sub})))}
-function backLabel(){return PREV==='admin'?'Back to Admin Portal':'Back to Dashboard'}
-function leaveUM(){if(PREV==='admin')renderAdmin();show(PREV)}
+function backLabel(){return PREV==='admin'?'Back to Admin Portal':PREV==='edit'?'Back to Location Management':'Back to Dashboard'}
+function leaveUM(){if(PREV==='admin'){renderAdmin();show('admin')}else if(PREV==='edit')openLocations(UMS.scopeLocationId,'um');else show(PREV)}
 function goUM(){umMain();show('um')}
-function openUsers(from){PREV=from;UMS.sel=null;umMain();show('um')}
+function openUsers(from,locationId,includeChildren){PREV=from;UMS.sel=null;UMS.scopeLocationId=locationId||null;UMS.scopeIncludeChildren=includeChildren!==false;if(locationId)UMS.region='All Locations';UMS.selectedIds.clear();umMain();show('um')}
 function selUser(){return items('users').find(u=>u.id===UMS.sel)||null}
 function needSel(fn){return()=>{const u=selUser();if(!u){t('Select a user from the list first.');return}fn(u)}}
 function umMain(){const c=$('umc'),users=items('users');$('umb').textContent=backLabel();
- const orgBox=h('div',{class:'org'}),tb=h('tbody'),det=h('div');
+ if(UMS.scopeLocationId&&!S.locations.some(location=>location.id===UMS.scopeLocationId))UMS.scopeLocationId=null;
+ const orgBox=h('div',{class:'org'}),tb=h('tbody'),det=h('div'),bulkPreview=h('div',{class:'bulk-preview'}),selectedCount=h('span',{class:'bulk-count',text:'0 selected'});
+ const bulkDestination=h('select',null,[h('option',{value:'',text:'Choose a destination location'}),...S.locations.map(location=>h('option',{value:location.id,text:locationPath(location)}))]);
+ const selectVisible=h('input',{type:'checkbox','aria-label':'Select all visible users'});let visibleUsers=[];
+ bulkDestination.onchange=()=>bulkPreview.replaceChildren();
  const opt=(arr,first)=>[first].concat(arr);
  const regions=opt(S.locations.map(location=>location.name),'All Locations');
- const selc=(label,opts,key)=>h('div',{class:'fl'},h('label',{class:'l'},label),sel(opts,UMS[key],v=>{UMS[key]=v;refresh()}));
+ const selc=(label,opts,key)=>{const input=sel(opts,UMS[key],v=>{UMS[key]=v;refresh()});input.dataset.userFilter=key;return h('div',{class:'fl'},fieldLabel(label,input),input)};
  const q=h('input',{type:'text',placeholder:'Search by name, email, or location…',value:UMS.q,oninput:e=>{UMS.q=e.target.value;drawTable()}});
- function drawOrg(){orgBox.replaceChildren(...LEVELS.map((lv,i)=>h('button',{class:'ot o'+i+(UMS.level===lv?' on':''),onclick:()=>{UMS.level=UMS.level===lv?'All Levels':lv;refresh(true)}},ico(['org','pos','person','store'][i]),h('b',{text:LVL[lv]}),h('span',{class:'cn',text:String(users.filter(u=>u.level===lv).length)}))))}
+ const scopeLocation=S.locations.find(location=>location.id===UMS.scopeLocationId)||null,scopeBox=h('div',{class:'location-user-scope'});
+ if(scopeLocation){
+  const includeChildren=h('input',{type:'checkbox',checked:UMS.scopeIncludeChildren,onchange:e=>{UMS.scopeIncludeChildren=e.target.checked;refresh()}});
+  scopeBox.append(phd('store','Location Scope',locationPath(scopeLocation)),h('div',{class:'scope-controls'},h('label',{class:'scope-toggle'},includeChildren,'Include child locations'),h('button',{class:'pill gray',text:'Clear location scope',onclick:()=>{UMS.scopeLocationId=null;UMS.scopeIncludeChildren=true;refresh()}})));
+ }
+ function updateSelectionSummary(){const selected=[...UMS.selectedIds].filter(id=>users.some(user=>user.id===id));selectedCount.textContent=selected.length+' selected';selectVisible.checked=visibleUsers.length>0&&visibleUsers.every(user=>UMS.selectedIds.has(user.id));selectVisible.indeterminate=visibleUsers.some(user=>UMS.selectedIds.has(user.id))&&!selectVisible.checked}
+ selectVisible.onchange=()=>{visibleUsers.forEach(user=>selectVisible.checked?UMS.selectedIds.add(user.id):UMS.selectedIds.delete(user.id));bulkPreview.replaceChildren();updateSelectionSummary();tb.querySelectorAll('.user-row-check').forEach(input=>{input.checked=selectVisible.checked})};
+ function showBulkPreview(){
+  if(!isSystemAdministrator()){t('System Administrator access is required for bulk location assignment.');return}
+  const selected=users.filter(user=>UMS.selectedIds.has(user.id)),destination=S.locations.find(location=>location.id===bulkDestination.value);
+  if(!selected.length){t('Select one or more users to preview an assignment.');return}
+  if(!destination){t('Choose a valid destination location.');return}
+  const list=h('ul',{class:'bulk-preview-list'},selected.map(user=>{const assigned=assignedLocationForUser(user),currentStores=dailyLocationsForUser(user),futureStores=dailyLocationsForUser(Object.assign({},user,{locationId:destination.id,store:destination.name})),storeList=stores=>stores.length?stores.map(location=>location.name).join(', '):'No stores';return h('li',null,h('strong',{text:user.name}),h('span',{text:'Assigned: '+(assigned?locationPath(assigned):user.store||'No assigned location')+' → '+locationPath(destination)+'; store scope: '+currentStores.length+' ('+storeList(currentStores)+') → '+futureStores.length+' ('+storeList(futureStores)+')'}))}));
+  const confirmAssignment=()=>{
+   if(!isSystemAdministrator()){t('System Administrator access is required for bulk location assignment.');return}
+   const current=items('users').filter(user=>UMS.selectedIds.has(user.id)),target=S.locations.find(location=>location.id===bulkDestination.value);
+   if(!target||current.length!==selected.length){t('The selected users or destination changed. Review the assignment and try again.');return}
+   const previous=current.map(user=>({user,locationId:user.locationId,store:user.store}));
+   current.forEach(user=>{user.locationId=target.id;user.store=target.name});
+   if(!save()){previous.forEach(item=>{item.user.locationId=item.locationId;item.user.store=item.store});t('Unable to assign the selected users. No changes were saved.');return}
+   UMS.selectedIds.clear();UMS.sel=null;bulkPreview.replaceChildren();refresh();t(current.length+' user'+(current.length===1?'':'s')+' assigned to '+target.name+'.');
+  };
+  bulkPreview.replaceChildren(h('div',{class:'bulk-preview-heading'},h('strong',{text:'Review location assignment'}),h('p',{class:'note',text:'This changes assigned locations only. Roles, permissions, and account status stay the same; store scope is recalculated from each user’s level and assigned location.'})),list,h('div',{class:'btns'},h('button',{class:'btn alt',text:'Cancel',onclick:()=>bulkPreview.replaceChildren()}),h('button',{class:'btn',text:'Confirm Assignment',onclick:confirmAssignment})));
+ }
+ const bulkControls=isSystemAdministrator()?h('div',{class:'bulk-controls'},h('div',{class:'bulk-select-all'},selectVisible,h('span',{text:'Select visible'}),selectedCount),h('div',{class:'bulk-destination'},fieldLabel('Assign selected users to',bulkDestination),bulkDestination,h('button',{class:'pill red',text:'Preview Assignment',onclick:showBulkPreview})),bulkPreview):null;
+ function drawOrg(){const scopeIds=UMS.scopeLocationId?locationScopeIds(UMS.scopeLocationId,UMS.scopeIncludeChildren):null,scopedUsers=scopeIds?users.filter(user=>{const assigned=assignedLocationForUser(user);return assigned&&scopeIds.has(assigned.id)}):users;orgBox.replaceChildren(...LEVELS.map((lv,i)=>h('button',{class:'ot o'+i+(UMS.level===lv?' on':''),onclick:()=>{UMS.level=UMS.level===lv?'All Levels':lv;refresh(true)}},ico(['org','pos','person','store'][i]),h('b',{text:LVL[lv]}),h('span',{class:'cn',text:String(scopedUsers.filter(u=>u.level===lv).length)}))))}
  function drawTable(){const qq=UMS.q.trim().toLowerCase();
-  const list=users.filter(u=>(UMS.level==='All Levels'||u.level===UMS.level)&&(UMS.role==='All Roles'||u.role===UMS.role)&&(UMS.region==='All Locations'||u.store===UMS.region)&&(UMS.status==='All Status'||(UMS.status==='Active')===u.on)&&(!qq||(u.name+' '+u.email+' '+u.store).toLowerCase().indexOf(qq)>=0));
-  tb.replaceChildren(...(list.length?list.map(u=>h('tr',{class:'rw'+(u.id===UMS.sel?' sel':''),onclick:()=>{UMS.sel=u.id;drawTable();drawDet()}},h('td',null,h('b',{class:'lnk',text:u.name})),h('td',{text:u.role}),h('td',{text:u.level}),h('td',{text:u.store}),h('td',{text:u.email}),h('td',null,tag(u.on?'Active':'Inactive',u.on?'':'bad')),h('td',{text:u.last}),h('td',null,h('button',{class:'dots',text:'•••',title:'Activate / deactivate',onclick:e=>{e.stopPropagation();u.on=!u.on;save();drawOrg();drawTable();drawDet();t(u.name+(u.on?' activated':' deactivated'))}})))):[h('tr',null,h('td',{colspan:'8',class:'note',text:'No users match these filters.'}))]))}
+  const scopeIds=UMS.scopeLocationId?locationScopeIds(UMS.scopeLocationId,UMS.scopeIncludeChildren):null;
+  const list=users.filter(u=>{const assigned=assignedLocationForUser(u),locText=assigned?locationPath(assigned):u.store||'';return (UMS.level==='All Levels'||u.level===UMS.level)&&(UMS.role==='All Roles'||u.role===UMS.role)&&(UMS.region==='All Locations'||u.store===UMS.region)&&(UMS.status==='All Status'||(UMS.status==='Active')===u.on)&&(!scopeIds||assigned&&scopeIds.has(assigned.id))&&(!qq||(u.name+' '+u.email+' '+locText).toLowerCase().indexOf(qq)>=0)});
+  visibleUsers=list;
+  tb.replaceChildren(...(list.length?list.map(u=>{
+   const selectUser=()=>{UMS.sel=u.id;drawTable();drawDet();const selected=tb.querySelector('.rw.sel .user-select');if(selected)selected.focus()};
+   const rowCheck=h('input',{type:'checkbox',class:'user-row-check',checked:UMS.selectedIds.has(u.id),'aria-label':'Select '+u.name,onclick:e=>e.stopPropagation(),onchange:e=>{e.target.checked?UMS.selectedIds.add(u.id):UMS.selectedIds.delete(u.id);bulkPreview.replaceChildren();updateSelectionSummary()}});
+   const assigned=assignedLocationForUser(u),displayLocation=assigned?locationPath(assigned):u.store||'—';
+   return h('tr',{class:'rw'+(u.id===UMS.sel?' sel':''),'data-user-id':u.id,onclick:selectUser},h('td',null,h('div',{class:'user-row-select'},isSystemAdministrator()?rowCheck:null,h('button',{class:'user-select',type:'button',text:u.name,'aria-label':'View details for '+u.name,onclick:e=>{e.stopPropagation();selectUser()}}))),h('td',{text:u.role}),h('td',{text:u.level}),h('td',null,isSystemAdministrator()?h('button',{class:'user-location-link',type:'button',text:displayLocation,onclick:e=>{e.stopPropagation();if(assigned)openLocations(assigned.id,'um');else t('This user has no matching organization location.')}}):h('span',{text:displayLocation})),h('td',{text:u.email}),h('td',null,tag(u.on?'Active':'Inactive',u.on?'':'bad')),h('td',{text:u.last}),h('td',null,h('button',{class:'user-status-action'+(u.on?' destructive':''),type:'button',text:u.on?'Deactivate':'Activate','aria-label':(u.on?'Deactivate ':'Activate ')+u.name,onclick:e=>{
+    e.stopPropagation();u.on=!u.on;save();drawOrg();drawTable();drawDet();
+    const updated=[...tb.querySelectorAll('tr')].find(row=>row.dataset.userId===String(u.id)),focusTarget=updated?updated.querySelector('.user-status-action'):c.querySelector('[data-user-filter="status"]');
+    if(focusTarget)focusTarget.focus();
+    t(u.name+(u.on?' activated':' deactivated'))
+   }})))
+  }):[h('tr',null,h('td',{colspan:'8',class:'note',text:'No users match these filters.'}))]));updateSelectionSummary()}
  function drawDet(){const u=selUser();
   if(!u){det.replaceChildren(h('div',{class:'nosel'},h('div',{class:'av3'},ico('person')),h('b',{text:'No user selected'}),h('p',{class:'note',text:'Select a user from the list to view their details, roles, and permissions.'})));return}
-  const on=PERMS.filter(p=>{const option=DASHBOARD_ACCESS.find(item=>item[0]===p[0]);return option?hasDashboardPermission(u,option[1]):p[0]==='admin'?hasAdminPortalAccess(Object.assign({},u,{on:true})):!!(u.perms&&u.perms[p[0]])});
+  const on=PERMS.filter(p=>{const option=DASHBOARD_ACCESS.find(item=>item[0]===p[0]);return option?hasDashboardPermission(u,option[1]):p[0]==='admin'?hasAdminPortalAccess(Object.assign({},u,{on:true})):!!(u.perms&&u.perms[p[0]]);}),assigned=assignedLocationForUser(u),accessibleStores=dailyLocationsForUser(u),storeScope=h('details',{class:'user-store-scope'},h('summary',{text:'View store scope ('+accessibleStores.length+')'}),accessibleStores.length?h('ul',null,accessibleStores.map(location=>h('li',{text:locationPath(location)}))):h('p',{class:'note',text:'No store locations are in scope for this user.'}));
   det.replaceChildren(h('div',{class:'dsel2'},h('div',{class:'av3 ini',text:ini(u)}),h('b',{text:u.name}),h('small',{text:u.role}),tag(u.on?'Active':'Inactive',u.on?'':'bad')),
-   h('div',{class:'dkv'},kv('Email',u.email),kv('Phone',u.phone||'—'),kv('Level',u.level),kv('Location',u.store),kv('Last Login',u.last)),
+   h('div',{class:'dkv'},kv('Email',u.email),kv('Phone',u.phone||'—'),kv('Level',u.level),kv('Assigned Location',assigned?locationPath(assigned):u.store||'—'),kv('Store Scope (by level)',accessibleStores.length+' store'+(accessibleStores.length===1?'':'s')),kv('Last Login',u.last)),storeScope,
    h('p',{class:'l2',text:'Access'}),h('div',{class:'chips2'},on.length?on.map(p=>h('span',{class:'chip2',text:p[1]})):[h('small',{text:'No system access'})]),
    h('div',{class:'dact'},btnI('padd','Edit User','sm2',()=>openEditUser(u)),btnI('shield','Manage Permissions','sm2',()=>openPerm(u)),btnI('lock','Reset Password','sm2',()=>openReset(u))))}
  function refresh(org){if(org)umMain();else{drawOrg();drawTable();drawDet()}}
  drawOrg();drawTable();drawDet();
  c.replaceChildren(h('div',{class:'ugrid'},
   h('div',null,
-   panel(null,phd('pos','Organization Hierarchy','Select a level to view and manage users.'),orgBox),
+   panel(null,phd('pos','Organization Hierarchy','Select a level to view and manage users.'),orgBox,scopeBox),
    panel(null,phd('pos','User List','Search, filter, and manage user accounts.'),
-    h('div',{class:'filters'},selc('Level',['All Levels'].concat(LEVELS),'level'),selc('Role',['All Roles'].concat(ROLES),'role'),selc('Location',regions,'region'),selc('Status',['Active','Inactive','All Status'],'status'),h('div',{class:'fl grow'},h('label',{class:'l'},'Search'),q)),
-    h('div',{class:'tw'},h('table',{class:'dt'},h('thead',null,h('tr',null,['Name','Role','Level','Location','Email','Status','Last Login','Actions'].map(x=>h('th',{text:x})))),tb)))),
+    h('div',{class:'filters'},selc('Level',['All Levels'].concat(LEVELS),'level'),selc('Role',['All Roles'].concat(ROLES),'role'),selc('Location',regions,'region'),selc('Status',['Active','Inactive','All Status'],'status'),h('div',{class:'fl grow'},fieldLabel('Search',q),q)),
+    bulkControls, h('div',{class:'tw'},h('table',{class:'dt'},h('thead',null,h('tr',null,['Name','Role','Level','Location','Email','Status','Last Login','Actions'].map(x=>h('th',{text:x})))),tb)))),
   h('div',null,
-   panel(null,phd('usr','Quick Actions','Common tasks'),h('div',{class:'qa'},btnI('padd','Add User','',openAdd),btnI('shield','Manage Permissions','',needSel(openPerm)),btnI('lock','Reset Password','',needSel(openReset)))),
+   panel(null,phd('usr','Quick Actions','Common tasks'),h('div',{class:'qa'},btnI('padd','Add User','',openAdd),isSystemAdministrator()?btnI('org','Browse Location Directory','',()=>openLocations(UMS.scopeLocationId,'um')):null,btnI('shield','Manage Permissions','',needSel(openPerm)),btnI('lock','Reset Password','',needSel(openReset)))),
    panel(null,phd('person','User Details',''),det))),
   h('div',{class:'btns left'},btnI('back',backLabel(),'',leaveUM)))}
 function openUs(node){$('usc').replaceChildren(node);show('us')}
 function pageHdr(icon,title,sub){return h('div',{class:'phd big'},h('span',{class:'ic'},ico(icon)),h('div',null,h('h3',{text:title}),h('p',{class:'note',text:sub})))}
 function userCard(u){return h('div',{class:'ucard'},h('div',{class:'av3 ini',text:ini(u)}),h('div',{class:'grow'},h('b',{text:u.name}),h('small',{text:u.email})),h('div',{class:'ukv'},kv('Role',u.role),kv('Level',u.level),kv('Location',u.store)),tag(u.on?'Active':'Inactive',u.on?'':'bad'))}
-function req(label,input){return h('div',null,h('label',{class:'l'},label+' ',h('i',{text:'*'})),input)}
+function req(label,input){return h('div',null,fieldLabel(label,input,true),input)}
 function openEditUser(u){
  const nameParts=(u.name||'').trim().split(/\s+/),
   fn=h('input',{value:u.first||nameParts[0]||'',placeholder:'Enter first name'}),
@@ -1426,7 +1583,7 @@ function openEditUser(u){
   saveDashboardPermissions(u,dashboardAccess.boxes);save();if(u.id===CURRENT_USER_ID)setHomeUser(u);goUM();t(u.name+' updated.');
  };
  openUs(panel(null,pageHdr('padd','Edit User','Update this user’s information and organization location.'),userCard(u),
-  h('div',{class:'frm'},req('First Name',fn),req('Last Name',ln),req('Email Address',em),h('div',null,h('label',{class:'l'},'Phone Number'),ph),req('Role',ro),req('Level',lv),h('div',{class:'full'},req('Location',st)),h('div',{class:'full'},h('h4',{class:'sh2',text:'Dashboard Functions'}),h('p',{class:'note',text:'Choose which dashboard options this user can access.'}),dashboardAccess.element)),
+  h('div',{class:'frm'},req('First Name',fn),req('Last Name',ln),req('Email Address',em),field('Phone Number',ph),req('Role',ro),req('Level',lv),h('div',{class:'full'},req('Location',st)),h('div',{class:'full'},h('h4',{class:'sh2',text:'Dashboard Functions'}),h('p',{class:'note',text:'Choose which dashboard options this user can access.'}),dashboardAccess.element)),
   err,h('div',{class:'btns'},btnI('back','Cancel','alt',goUM),btnI('save','Save Changes','',update))))
 }
 function openAdd(){const fn=h('input',{placeholder:'Enter first name'}),ln=h('input',{placeholder:'Enter last name'}),em=h('input',{type:'email',placeholder:'Enter email address'}),pw=h('input',{type:'password',placeholder:'Set login password (at least 8 characters)',autocomplete:'new-password'}),ph=h('input',{placeholder:'Enter phone number (optional)'}),
@@ -1448,7 +1605,7 @@ function openAdd(){const fn=h('input',{placeholder:'Enter first name'}),ln=h('in
   }catch(e){console.error('Unable to create account credentials:',e);err.textContent=e.message||'Unable to securely create this account.'}
  };
  openUs(panel(null,pageHdr('padd','Add New User','Create a new user account and assign their role and access.'),
-  h('div',{class:'frm'},req('First Name',fn),req('Last Name',ln),req('Email Address',em),req('Login Password',pw),h('div',null,h('label',{class:'l'},'Phone Number'),ph),req('Role',ro),req('Level',lv),h('div',{class:'full'},req('Location',st)),h('div',{class:'full'},h('h4',{class:'sh2',text:'Dashboard Functions'}),h('p',{class:'note',text:'Choose which dashboard options this user can access.'}),dashboardAccess.element)),
+  h('div',{class:'frm'},req('First Name',fn),req('Last Name',ln),req('Email Address',em),req('Login Password',pw),field('Phone Number',ph),req('Role',ro),req('Level',lv),h('div',{class:'full'},req('Location',st)),h('div',{class:'full'},h('h4',{class:'sh2',text:'Dashboard Functions'}),h('p',{class:'note',text:'Choose which dashboard options this user can access.'}),dashboardAccess.element)),
   h('h4',{class:'sh2',text:'Account Settings'}),
   h('div',{class:'note2'},ico('info'),h('span',{text:'Email delivery is not configured. Share the login email and password securely with the user.'})),err,
   h('div',{class:'btns'},btnI('back','Cancel','alt',goUM),btnI('padd','Create User','',create))))}
@@ -1477,11 +1634,13 @@ function openReset(u){const rg=h('input',{type:'radio',name:'pw',checked:true}),
 /* ---------- wiring ---------- */
 $('adm').classList.add('hidden');
 document.querySelectorAll('.app:not(#login)>header>img').forEach(logo=>{
- logo.setAttribute('role','button');logo.setAttribute('tabindex','0');logo.setAttribute('alt','Firehouse Subs — go to oporations portal');
+ logo.setAttribute('role','button');logo.setAttribute('tabindex','0');logo.setAttribute('alt','Firehouse Subs — go to Dashboard');
  logo.addEventListener('click',()=>show('home'));
  logo.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show('home')}});
 });
-$('eye').onclick=()=>{const p=$('p');p.type=p.type==='password'?'text':'password'};
+$('ab').textContent='Back to Dashboard';
+$('admin').querySelector('.hero p').textContent='Manage users, locations, roles, and Dashboard content.';
+$('eye').onclick=()=>{const p=$('p'),visible=p.type==='password';p.type=visible?'text':'password';$('eye').setAttribute('aria-label',visible?'Hide password':'Show password');$('eye').setAttribute('aria-pressed',String(visible))};
 const RESET_CODE_HOURS=24,RESET_CODE_MAX_TRIES=5;
 async function issueResetCode(u,result,err){
  const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',code=Array.from(crypto.getRandomValues(new Uint8Array(8)),b=>alphabet[b%alphabet.length]).join('');
@@ -1947,7 +2106,13 @@ function drawMvrForm(user,visit){
   },
   persist=status=>{
    if(!/^\d{4}-\d{2}-\d{2}$/.test(dateInput.value)){t('Choose a valid visit date.');return}
-   if(status==='Complete'&&MVR_CATEGORIES.some(item=>!ratings[item[0]])){t('Rate every category before submitting.');return}
+   if(status==='Complete'&&MVR_CATEGORIES.some(item=>!ratings[item[0]])){
+    const missing=MVR_CATEGORIES.filter(item=>!ratings[item[0]]);
+    validation.textContent='Rate every category before submitting. Still needed: '+missing.map(item=>item[0]).join(', ')+'.';
+    const first=categoryPanels[MVR_CATEGORIES.indexOf(missing[0])].querySelector('.mvr-rate-btn');
+    if(first)first.focus();t('Rate every category before submitting.');return
+   }
+   validation.textContent='';
    const snapshot=visit?JSON.parse(JSON.stringify(visit)):null,record=visit||{id:'mvr-'+nid(),created:Date.now()};
    Object.assign(record,{date:dateInput.value,locationId:storeSelect.value,reviewer:user.name||'',reviewerRole:user.role||'',reviewerId:user.id,
     ratings:Object.assign({},ratings),comments:Object.assign({},comments),findings:Object.assign({},findings),commentary:mvrCommentaryClean(commentary),status,score:status==='Complete'?mvrScore(ratings):0});
@@ -1964,12 +2129,15 @@ function drawMvrForm(user,visit){
   };
  storeSelect.value=initialStore;
  refreshScore();
+ const categoryPanels=MVR_CATEGORIES.map(category),validation=h('p',{class:'err',role:'alert'});
  $('mc').replaceChildren(
   panel('Visit Details',h('div',{class:'frm ins-filters'},field('Visit Date',dateInput),field('Restaurant',storeSelect)),
-   h('p',{class:'note',text:'Rate each area from 1 (needs immediate attention) to 5 (excellent). This is a coaching tool, not an audit. Ratings of 1 or 2 create an action item.'}),scoreBox),
-  ...MVR_CATEGORIES.map(category),
+   h('p',{class:'note',text:'Rate each area from 1 (needs immediate attention) to 5 (excellent). This is a coaching tool, not an audit. Ratings of 1 or 2 create an action item.'}),scoreBox,
+   h('p',{class:'form-save-note',text:'Changes are not saved until you select Save Draft or Submit Visit. Cancel or leaving this page discards unsaved changes; any previously saved draft remains.'}),
+   h('div',{class:'btns left'},h('button',{class:'btn alt sm2',type:'button',text:'Save Draft',onclick:()=>persist('Draft')}))),
+  sectionNavigation(categoryPanels),...categoryPanels,
   mvrCommentaryPanel(commentary),
-  panel(null,h('div',{class:'btns left'},h('button',{class:'btn sm2',type:'button',text:'Submit Visit',onclick:()=>persist('Complete')}),h('button',{class:'btn alt sm2',type:'button',text:'Save Draft',onclick:()=>persist('Draft')}),h('button',{class:'btn alt sm2',type:'button',text:'Cancel',onclick:back})))
+  panel(null,validation,h('div',{class:'btns left'},h('button',{class:'btn sm2',type:'button',text:'Submit Visit',onclick:()=>persist('Complete')}),h('button',{class:'btn alt sm2',type:'button',text:'Save Draft',onclick:()=>persist('Draft')}),h('button',{class:'btn alt sm2',type:'button',text:'Cancel',onclick:back})))
  )
 }
 function drawMvrDetail(user,visit){
@@ -2031,15 +2199,16 @@ function mvrInsightsPanel(scope,from,to){
 const homeGrid=$('home').querySelector('.grid'),
  homeSections=h('div',{class:'home-sections'}),
  homeSectionOptions={
-  'User Functions':{options:['User Management'],description:null}
+  'Tools and Administration':{options:['User Management'],description:null}
  };
 $('home').querySelector('.welcome').after(h('section',{class:'daily-progress','aria-labelledby':'dailyProgressTitle'},h('div',{id:'todayProgress','aria-live':'polite'})));
 $('home').querySelector('.welcome').after(h('section',{id:'dailyControls',class:'daily-progress daily-controls','aria-label':'Date and restaurant'}));
 $('todayProgress').parentElement.after(h('section',{class:'daily-progress restaurant-status','aria-labelledby':'restaurantStatusTitle'},h('div',{class:'daily-progress-head'},h('h3',{id:'restaurantStatusTitle',text:'Restaurant Status'})),
  h('div',{id:'priorityList','aria-live':'polite'})));
 $('home').querySelector('.restaurant-status').after(h('section',{class:'daily-progress','aria-labelledby':'todaysPrioritiesTitle'},h('div',{class:'daily-progress-head'},h('h3',{id:'todaysPrioritiesTitle',text:"Today's Priorities"})),h('div',{id:'todaysPriorities','aria-live':'polite'})));
+$('dailyControls').after($('todaysPriorities').parentElement);
 {const currentUser=items('users').find(account=>account.id===CURRENT_USER_ID);if(currentUser)renderPriorityPanel(currentUser)}
-$('todaysPriorities').parentElement.after($('todayProgress').parentElement);
+$('dailyControls').after($('todayProgress').parentElement);
 Object.entries(homeSectionOptions).forEach(([title,config])=>{
  const options=h('div',{class:'grid home-section-options'}),
   section=h('section',{class:'home-section',...(config.module?{'data-n':title,'data-module':config.module}:{})},h('h3',{text:title}),options);
@@ -2047,28 +2216,29 @@ Object.entries(homeSectionOptions).forEach(([title,config])=>{
   const tile=[...homeGrid.querySelectorAll('.tile')].find(button=>button.dataset.n===name);
   if(tile)options.append(tile)
  });
- if(title==='User Functions')options.append(
+ if(title==='Tools and Administration')options.append(
   h('button',{class:'tile','data-n':'User Management','data-module':'users'},h('span',{class:'ico'},ico('usr')),h('span',{class:'lbl',text:'User Management'}),h('span',{class:'chev',text:'›'})),
-  h('button',{class:'tile','data-n':'View Entries','data-module':'entries',type:'button',onclick:openEntries},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'View Entries'}),h('span',{class:'chev',text:'›'})),
-  h('button',{class:'tile','data-n':'Action Center','data-module':'actions',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'Action Center'}),h('span',{class:'chev',text:'›'})),
-  h('button',{class:'tile','data-n':'Operational Insights','data-module':'insights',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'Operational Insights'}),h('span',{class:'chev',text:'›'})),
-  h('button',{class:'tile','data-n':'Performance Scorecard','data-module':'scorecard',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'Performance Scorecard'}),h('span',{class:'chev',text:'›'})),
-  h('button',{class:'tile','data-n':'Management Visits','data-module':'mvr',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'Management Visits'}),h('span',{class:'chev',text:'›'})),
-  h('button',{class:'tile','data-n':'Verify Completed Action Items','data-module':'verify_actions',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'Verify Completed Action Items'}),h('span',{class:'chev',text:'›'})),
+  h('button',{class:'tile','data-n':'View Entries','data-module':'entries',type:'button',onclick:openEntries},h('span',{class:'ico'},ico('entries')),h('span',{class:'lbl',text:'View Entries'}),h('span',{class:'chev',text:'›'})),
+  h('button',{class:'tile','data-n':'Action Center','data-module':'actions',type:'button'},h('span',{class:'ico'},ico('actions')),h('span',{class:'lbl',text:'Action Center'}),h('span',{class:'chev',text:'›'})),
+  h('button',{class:'tile','data-n':'Operational Insights','data-module':'insights',type:'button'},h('span',{class:'ico'},ico('chart')),h('span',{class:'lbl',text:'Operational Insights'}),h('span',{class:'chev',text:'›'})),
+  h('button',{class:'tile','data-n':'Performance Scorecard','data-module':'scorecard',type:'button'},h('span',{class:'ico'},ico('scorecard')),h('span',{class:'lbl',text:'Performance Scorecard'}),h('span',{class:'chev',text:'›'})),
+  h('button',{class:'tile','data-n':'Management Visits','data-module':'mvr',type:'button'},h('span',{class:'ico'},ico('visits')),h('span',{class:'lbl',text:'Management Visits'}),h('span',{class:'chev',text:'›'})),
+  h('button',{class:'tile','data-n':'Verify Completed Action Items','data-module':'verify_actions',type:'button'},h('span',{class:'ico'},ico('shield')),h('span',{class:'lbl',text:'Verify Completed Action Items'}),h('span',{class:'chev',text:'›'})),
   h('button',{class:'tile','data-n':'Multi-Store Overview','data-module':'store_overview',type:'button'},h('span',{class:'ico'},ico('org')),h('span',{class:'lbl',text:'Multi-Store Overview'}),h('span',{class:'chev',text:'›'})),
-  h('button',{class:'tile','data-n':'My Actions','data-module':'actions',type:'button'},h('span',{class:'ico'},ico('clipboard')),h('span',{class:'lbl',text:'My Actions'}),h('span',{class:'chev',text:'›'})),
+  h('button',{class:'tile','data-n':'My Actions','data-module':'actions',type:'button'},h('span',{class:'ico'},ico('myactions')),h('span',{class:'lbl',text:'My Actions'}),h('span',{class:'chev',text:'›'})),
   h('button',{class:'tile','data-n':'Temperature Exceptions','data-module':'temp_exceptions',type:'button'},h('span',{class:'ico'},ico('thermometer')),h('span',{class:'lbl',text:'Temperature Exceptions'}),h('span',{class:'chev',text:'›'}))
  );
- if(title==='User Functions'){
+ if(title==='Tools and Administration'){
   const groups=[
    ['Daily Follow-Up',['My Actions','Action Center','Temperature Exceptions','Verify Completed Action Items']],
    ['Performance and Reviews',['Multi-Store Overview','Operational Insights','Performance Scorecard','Management Visits']],
-   ['Records and Administration',['View Entries','User Management']]
+   ['Records',['View Entries']],
+   ['Administration',['User Management']]
   ];
   const sections=groups.map(([label,names])=>{
    const grid=h('div',{class:'grid home-section-options'});
    names.forEach(name=>{const tile=[...options.querySelectorAll('.tile')].find(button=>button.dataset.n===name);if(tile)grid.append(tile)});
-   return h('section',{class:'home-function-group'},h('h4',{text:label}),grid)
+   return h('section',{class:'home-function-group'},h('details',label==='Daily Follow-Up'?{open:''}:null,h('summary',null,h('h4',{text:label})),grid))
   });
   options.replaceWith(...sections)
  }
@@ -2087,7 +2257,7 @@ document.querySelector('#home button[data-n="Multi-Store Overview"]').onclick=()
 document.querySelector('#home button[data-n="My Actions"]').onclick=()=>openMyActions();
 document.querySelector('#home button[data-n="Temperature Exceptions"]').onclick=()=>openTemperatureExceptions();
 document.querySelector('#home button[data-n="Performance Scorecard"]').onclick=()=>openScorecard(items('users').find(account=>account.id===CURRENT_USER_ID));
-$('hb').onclick=()=>show('home');$('ab').onclick=()=>show('home');$('eb').onclick=()=>{if(!isSystemAdministrator()){show('home');return}renderAdmin();show('admin')};
+$('hb').onclick=()=>show('home');$('ab').onclick=()=>show('home');$('eb').onclick=()=>{if(!isSystemAdministrator()){show('home');return}if($('et').textContent==='Location Management'&&LOCATION_RETURN_VIEW==='um'){umMain();show('um');return}renderAdmin();show('admin')};
 $('umb').onclick=leaveUM;$('usb').onclick=goUM;
 
 function oversightUser(){return items('users').find(user=>user.id===CURRENT_USER_ID&&user.on)}
@@ -2180,18 +2350,32 @@ function openStoreOverview(){
   canActions=hasDashboardPermission(user,'actions'),canVerify=hasDashboardPermission(user,'verify_actions'),canMvr=hasDashboardPermission(user,'mvr'),
   canTemp=hasDashboardPermission(user,'temp_exceptions'),exceptions=canTemp?temperatureExceptions(user):[];
  $('mt').textContent='Multi-Store Overview';$('md').textContent='Today’s submissions and current follow-up across your assigned restaurants.';
- $('mc').replaceChildren(panel('Restaurants ('+stores.length+')',
-  h('p',{class:'note',text:'Only data stored in this browser is shown. Missing submissions are expected forms not yet submitted today; no due time is assumed.'}),
-  stores.length?stores.map(store=>{
+ const rows=stores.map(store=>{
    const status=S.dailyStatus&&S.dailyStatus[date+'|'+store.id]||{},missing=daily.filter(option=>!dailyOptionComplete(option,status)).length,
     actions=S.actionItems.filter(action=>action.locationId===store.id),visits=canMvr?S.mvrVisits.filter(v=>v.locationId===store.id&&v.status==='Complete').sort((a,b)=>b.date.localeCompare(a.date)||b.created-a.created):[],
-    facts=[daily.length?missing+' of '+daily.length+' forms not submitted':'No permitted daily forms'];
-   if(canActions){facts.push(actions.filter(a=>a.status!=='Done'&&a.level==='critical').length+' open critical');facts.push(actions.filter(a=>(actionTiming(a)||{}).state==='late').length+' overdue')}
-   if(canVerify)facts.push(actions.filter(a=>actionStage(a)==='Completed').length+' awaiting verification');
-   if(canTemp)facts.push(exceptions.filter(row=>row.locationId===store.id&&row.date===date).length+' temperature exceptions today');
-   if(canMvr)facts.push(visits.length?'Last visit '+mvrDate(visits[0].date)+' · '+visits[0].score+'%':'No completed visits');
-   return h('div',{class:'ins-row'},h('span',null,h('b',{text:locationPath(store)}),h('small',{text:facts.join(' · ')})),h('button',{class:'btn alt sm2',type:'button',text:'Open Store Dashboard',onclick:()=>openOversightStore(user,store,()=>show('home'))}))
-  }):empty('No stores are assigned to your account.')));show('mod')
+    critical=actions.filter(a=>a.status!=='Done'&&a.level==='critical').length,
+    overdue=actions.filter(a=>(actionTiming(a)||{}).state==='late').length,
+    verification=actions.filter(a=>actionStage(a)==='Completed').length,
+    temperature=exceptions.filter(row=>row.locationId===store.id&&row.date===date).length;
+   return {store,missing,critical,overdue,verification,temperature,visit:visits[0]}
+  }),
+  search=h('input',{type:'search',placeholder:'Search restaurants or locations','aria-label':'Search restaurants or locations'}),
+  filter=h('select',{'aria-label':'Filter restaurants'},h('option',{value:'all',text:'All restaurants'}),daily.length?h('option',{value:'missing',text:'Forms not submitted'}):null,canActions?h('option',{value:'critical',text:'Open critical actions'}):null,canActions?h('option',{value:'overdue',text:'Overdue actions'}):null,canVerify?h('option',{value:'verification',text:'Awaiting verification'}):null,canTemp?h('option',{value:'temperature',text:'Temperature exceptions'}):null),
+  sort=h('select',{'aria-label':'Sort restaurants'},h('option',{value:'name',text:'Restaurant name'}),daily.length?h('option',{value:'missing',text:'Most forms not submitted'}):null,canActions?h('option',{value:'critical',text:'Most open critical actions'}):null,canActions?h('option',{value:'overdue',text:'Most overdue actions'}):null),
+  list=h('div',{'aria-live':'polite'}),draw=()=>{
+   const query=search.value.trim().toLowerCase(),visible=rows.filter(row=>locationPath(row.store).toLowerCase().includes(query)&&(filter.value==='all'||row[filter.value]>0));
+   visible.sort((a,b)=>(sort.value==='name'?0:b[sort.value]-a[sort.value])||locationPath(a.store).localeCompare(locationPath(b.store)));
+   list.replaceChildren(h('p',{class:'note',text:'Showing '+visible.length+' of '+stores.length+' restaurants.'}),...(visible.length?visible.map(row=>{
+    const facts=[['Daily forms',daily.length?row.missing+' of '+daily.length+' not submitted':'No permitted daily forms']];
+    if(canActions)facts.push(['Critical',row.critical+' open'],['Overdue',String(row.overdue)]);
+    if(canVerify)facts.push(['Verification',row.verification+' awaiting']);
+    if(canTemp)facts.push(['Temperature',row.temperature+' exceptions today']);
+    if(canMvr)facts.push(['Last visit',row.visit?mvrDate(row.visit.date)+' · '+row.visit.score+'%':'No completed visits']);
+    return h('div',{class:'overview-store'},h('div',null,h('b',{text:locationPath(row.store)}),h('div',{class:'overview-facts'},facts.map(([label,value])=>h('div',null,h('span',{text:label}),h('strong',{text:value}))))),h('button',{class:'btn alt sm2',type:'button',text:'Open Store Dashboard',onclick:()=>openOversightStore(user,row.store,()=>show('home'))}))
+   }):[empty(stores.length?'No restaurants match these filters.':'No stores are assigned to your account.')]))
+  };
+ search.oninput=draw;filter.onchange=draw;sort.onchange=draw;
+ $('mc').replaceChildren(panel('Restaurants ('+stores.length+')',h('p',{class:'note',text:'Only data stored in this browser is shown. Missing submissions are expected forms not yet submitted today; no due time is assumed.'}),h('div',{class:'overview-filters'},field('Search',search),field('Show',filter),field('Sort by',sort)),list));draw();show('mod')
 }
 /* Demo environment initialization */
 const DEMO_EMAIL='admin@shifthero.demo';
@@ -2426,7 +2610,7 @@ function actionExtras(action,user){
    keys.forEach(key=>{snap[key]=action[key]});
    mutate();
    if(!save()){keys.forEach(key=>{if(snap[key]===undefined)delete action[key];else action[key]=snap[key]});t('Unable to update the action item. Browser storage may be full.');return}
-   renderPriorityPanel(user);drawActionItems(user)
+   ACTION_HIGHLIGHT=action.id;renderPriorityPanel(user);drawActionItems(user)
   },
   chips=[h('span',{class:'act-chip stage',text:stage})];
  if(timing){
@@ -2530,7 +2714,7 @@ function tempCorrectionBox(module,item,status,getValue){
    action.setAttribute('aria-label','Corrective action taken');
    wrap.classList.remove('done');
    wrap.replaceChildren(h('h4',{text:'⚠ Corrective Action Required'}),
-    h('div',{class:'frm'},field('Product',product),field('Temperature Recorded',recorded),field('Corrective Action Taken',action),field('Follow-Up Temperature',followUp)),
+    h('div',{class:'frm'},field('Product',product),field('Temperature Recorded (°F)',recorded),field('Corrective Action Taken',action),field('Follow-Up Temperature (°F)',followUp)),
     field('Notes',notes),
     h('div',{class:'btns left'},h('button',{class:'btn',type:'button',text:'Save Corrective Action',onclick:()=>{
      const user=acUser(),fu=followUp.value.trim();
@@ -3137,7 +3321,7 @@ drawInsights=function(user){
 })();
 
 (()=>{
- const VERSION='1.2',TEXT=[
+ const VERSION='2.0',TEXT=[
   'Shift Hero is an independent educational and portfolio project created by Evan Douma for learning, demonstration, and professional development purposes.',
   'This project is not affiliated with, endorsed by, sponsored by, or officially associated with Firehouse Subs, Restaurant Brands International (RBI), any franchise organization, or any other company.',
   'Any trademarks, logos, brand imagery, fonts, names, or branding elements referenced within the project remain the property of their respective owners.',
@@ -3171,7 +3355,12 @@ drawInsights=function(user){
     h('h2',{id:'discTitle',text:'Project Disclaimer'}),TEXT.map(text=>h('p',{text})),about,h('div',{class:'disc-btns'},aboutBtn,closeBtn)));
   document.body.append(backdrop);document.addEventListener('keydown',onKey);closeBtn.focus()
  };
- document.querySelectorAll('footer').forEach(footer=>footer.append(
-  h('div',{class:'brand-foot'},h('span',null,h('b',{text:'Shift Hero'}),' © 2026'),h('i',{class:'sep',text:'•'}),h('span',{text:'Portfolio Project'}),h('i',{class:'sep',text:'•'}),h('span',{text:'Created by Evan Douma'}),h('i',{class:'sep',text:'•'}),h('span',{text:'Version '+VERSION})),
-  h('button',{class:'disc-link',type:'button',text:'Disclaimer',onclick:open})))
+ document.querySelectorAll('footer').forEach(footer=>{
+  const isLogin=!!footer.closest('#login');
+  if(isLogin)footer.replaceChildren();
+  const brandFoot=isLogin
+   ?h('div',{class:'brand-foot'},h('span',null,h('b',{text:'Shift Hero'}),' © 2026'),h('i',{class:'sep',text:'•'}),h('span',{text:'Portfolio Project'}),h('i',{class:'sep',text:'•'}),h('span',{text:'Version '+VERSION}))
+   :h('div',{class:'brand-foot'},h('span',null,h('b',{text:'Shift Hero'}),' © 2026'),h('i',{class:'sep',text:'•'}),h('span',{text:'Portfolio Project'}),h('i',{class:'sep',text:'•'}),h('span',{text:'Created by Evan Douma'}),h('i',{class:'sep',text:'•'}),h('span',{text:'Version '+VERSION}));
+  footer.append(brandFoot,h('button',{class:'disc-link',type:'button',text:'Disclaimer',onclick:open}))
+ })
 })();
