@@ -35,29 +35,91 @@
     });
   });
 
-  const roleTabs = [...landing.querySelectorAll('.lp-role-selector [role="tab"]')];
-  function selectRole(tab) {
-    roleTabs.forEach(item => {
+  const galleryTabs = [...landing.querySelectorAll('.journey-gallery-tabs [role="tab"]')];
+  function selectGallery(tab) {
+    galleryTabs.forEach(item => {
       const selected = item === tab;
       item.setAttribute('aria-selected', String(selected));
       item.tabIndex = selected ? 0 : -1;
       document.getElementById(item.getAttribute('aria-controls')).hidden = !selected;
     });
   }
-  roleTabs.forEach((tab, index) => {
-    tab.addEventListener('click', () => selectRole(tab));
+  galleryTabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => selectGallery(tab));
     tab.addEventListener('keydown', event => {
       let next;
-      if (event.key === 'ArrowRight') next = (index + 1) % roleTabs.length;
-      else if (event.key === 'ArrowLeft') next = (index + roleTabs.length - 1) % roleTabs.length;
+      if (event.key === 'ArrowRight') next = (index + 1) % galleryTabs.length;
+      else if (event.key === 'ArrowLeft') next = (index + galleryTabs.length - 1) % galleryTabs.length;
       else if (event.key === 'Home') next = 0;
-      else if (event.key === 'End') next = roleTabs.length - 1;
+      else if (event.key === 'End') next = galleryTabs.length - 1;
       else return;
       event.preventDefault();
-      selectRole(roleTabs[next]);
-      roleTabs[next].focus();
+      selectGallery(galleryTabs[next]);
+      galleryTabs[next].focus();
     });
   });
+
+  const tracker = landing.querySelector('.journey-tracker');
+  const journeyLinks = [...tracker.querySelectorAll('[data-stage]')];
+  const journeySections = journeyLinks.map(link => document.getElementById(link.getAttribute('href').slice(1)));
+  const fragments = landing.querySelector('.journey-fragments');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let trackingScheduled = false;
+  let previousActive = -1;
+  function updateJourney() {
+    trackingScheduled = false;
+    if (!document.body.classList.contains('landing-active')) return;
+    const board = fragments.getBoundingClientRect();
+    const organized = Math.max(0, Math.min(1, (window.innerHeight * 0.7 - board.top) / (board.height + window.innerHeight * 0.25)));
+    fragments.style.setProperty('--disorder', String(reducedMotion.matches ? 0 : 1 - organized));
+    const marker = window.innerHeight * 0.4;
+    const positions = journeySections.map(section => section.getBoundingClientRect().top);
+    let active = -1;
+    positions.forEach((top, index) => {
+      if (top <= marker) active = index;
+    });
+    if (window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2 && active >= 0) {
+      active = journeySections.length - 1;
+    }
+    let progress = 0;
+    if (active >= 0) {
+      const current = positions[active];
+      const next = positions[active + 1];
+      const fraction = next === undefined ? 0 : Math.max(0, Math.min(1, (marker - current) / (next - current)));
+      progress = (active + fraction) / (journeySections.length - 1);
+    }
+    tracker.style.setProperty('--journey-progress', String(progress));
+    journeyLinks.forEach((link, index) => {
+      link.parentElement.classList.toggle('is-current', index === active);
+      link.parentElement.classList.toggle('is-complete', index < active);
+      if (index === active) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    });
+    if (active !== previousActive && getComputedStyle(tracker).position === 'sticky') {
+      const list = tracker.querySelector('ol');
+      if (active < 0) {
+        list.scrollLeft = 0;
+      } else {
+        const link = journeyLinks[active];
+        const listRect = list.getBoundingClientRect();
+        const linkRect = link.getBoundingClientRect();
+        if (linkRect.left < listRect.left || linkRect.right > listRect.right) {
+          list.scrollLeft += linkRect.left - listRect.left - (list.clientWidth - linkRect.width) / 2;
+        }
+      }
+    }
+    previousActive = active;
+  }
+  function scheduleJourneyUpdate() {
+    if (!trackingScheduled) {
+      trackingScheduled = true;
+      requestAnimationFrame(updateJourney);
+    }
+  }
+  window.addEventListener('scroll', scheduleJourneyUpdate, { passive: true });
+  window.addEventListener('resize', scheduleJourneyUpdate);
+  reducedMotion.addEventListener('change', scheduleJourneyUpdate);
+  scheduleJourneyUpdate();
 
   const backToProject = document.getElementById('backToProject');
   backToProject.addEventListener('click', event => {
@@ -66,6 +128,7 @@
     document.body.classList.add('landing-active');
     window.scrollTo(0, 0);
     landing.querySelector('h1').focus({ preventScroll: true });
+    scheduleJourneyUpdate();
   });
 
   window.addEventListener('popstate', () => {
@@ -73,6 +136,7 @@
       if (!login.classList.contains('hidden')) enterApp();
     } else if (!login.classList.contains('hidden')) {
       document.body.classList.add('landing-active');
+      scheduleJourneyUpdate();
     }
   });
 })();

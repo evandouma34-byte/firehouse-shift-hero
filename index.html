@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en-CA"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Firehouse Subs Shift Hero</title>
-<link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="landing.css"></head><body class="landing-active">
+<link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="landing.css"><link rel="stylesheet" href="journey.css"></head><body class="landing-active">
 <div id="landing">
   <div class="lp-nav" role="banner">
     <a class="lp-brand" href="#project-overview" aria-label="Firehouse Subs and Shift Hero project overview"><img src="firehouse-subs-logo.png" alt="Firehouse Subs"><span class="lp-brand-divider" aria-hidden="true">&times;</span><span class="lp-brand-name" aria-hidden="true">Shift Hero</span></a>
@@ -10,166 +10,174 @@
     </nav>
     <a class="lp-button lp-button-red lp-nav-cta" href="#login" data-enter-app>Enter Shift Hero <span aria-hidden="true">&rarr;</span></a>
   </div>
+  <nav class="journey-tracker" aria-label="Project journey">
+    <span class="journey-tracker-label">Journey</span>
+    <ol>
+      <li><a href="#journey-problem" data-stage="problem"><span>01</span> Problem</a></li>
+      <li><a href="#background" data-stage="observation"><span>02</span> Observation</a></li>
+      <li><a href="#journey-idea" data-stage="idea"><span>03</span> Idea</a></li>
+      <li><a href="#development" data-stage="planning"><span>04</span> Planning</a></li>
+      <li><a href="#journey-build" data-stage="build"><span>05</span> Build</a></li>
+      <li><a href="#journey-iterate" data-stage="iterate"><span>06</span> Iterate</a></li>
+      <li><a href="#journey-result" data-stage="result"><span>07</span> Result</a></li>
+      <li><a href="#journey-explore" data-stage="explore"><span>08</span> Explore</a></li>
+    </ol>
+  </nav>
   <main class="lp-main">
     <section class="lp-hero" id="project-overview">
       <div class="lp-hero-copy">
         <p class="lp-eyebrow"><span>Project Concept</span> Restaurant Operations &amp; Leadership</p>
         <h1 tabindex="-1">A Better Way to Support <span>Restaurant Leadership</span></h1>
         <p class="lp-hero-intro">Shift Hero is an independent project exploring how digital tools can help restaurant supervisors and managers organize information, support leadership responsibilities, and improve day-to-day operational management.</p>
-        <div class="lp-actions"><a class="lp-button lp-button-red" href="#login" data-enter-app>Enter Prototype <span aria-hidden="true">&rarr;</span></a><a class="lp-text-link" href="#background">Learn More <span aria-hidden="true">&darr;</span></a></div>
+        <div class="lp-actions"><a class="lp-button lp-button-red" href="#login" data-enter-app>Enter Prototype <span aria-hidden="true">&rarr;</span></a><a class="lp-text-link journey-scroll-link" href="#journey-problem">Scroll to Explore the Journey <span aria-hidden="true">&darr;</span></a></div>
         <p class="lp-hero-note">An independent restaurant leadership and operations platform concept built within the Firehouse Subs environment.</p>
       </div>
       <div class="lp-hero-visual">
         <div class="lp-visual-label"><span>Shift Hero</span><span>Platform Concept / 01</span></div>
-        <div class="lp-screen lp-hero-screen"><img src="landing-dashboard.png" alt="Shift Hero home dashboard in the demo environment"></div>
+        <div class="lp-screen lp-hero-screen"><img src="journey-dashboard-current.png" alt="Restaurant Command Center dashboard in the System Administrator demo"></div>
         <p class="lp-image-caption">A look inside the working prototype <span>Demo environment</span></p>
       </div>
     </section>
 
-    <section class="lp-section lp-summary" aria-labelledby="lp-summary-title">
-      <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">At a glance</p><h2 id="lp-summary-title">What Shift Hero Does</h2></div><p>Shift Hero brings operational resources, leadership guidance, content administration, and user management into one manager-focused environment.</p></div>
-      <div class="lp-summary-grid">
-        <article><span aria-hidden="true">01</span><h3>Access Operational Resources</h3></article>
-        <article><span aria-hidden="true">02</span><h3>Support Leadership Development</h3></article>
-        <article><span aria-hidden="true">03</span><h3>Manage Platform Content</h3></article>
-        <article><span aria-hidden="true">04</span><h3>Control User Access</h3></article>
+    <section class="lp-section journey-section journey-problem" id="journey-problem" data-journey="problem">
+      <div class="journey-number" aria-hidden="true">01</div>
+      <div class="lp-section-head"><p class="lp-kicker">01 / The Problem</p><h2>The Information Existed.<br>Finding It Wasn't Always Easy.</h2><p class="journey-intro">Restaurant leaders work with information from many places while keeping the day moving.</p></div>
+      <p class="journey-realization">There has to be a better way.<svg viewBox="0 0 300 16" preserveAspectRatio="none" aria-hidden="true"><path d="M3 11 C65 5 154 12 296 5 M13 14 C103 8 202 12 286 8"/></svg></p>
+      <div class="journey-fragments" aria-label="Early product discovery: shift questions, observations, and opportunities">
+        <p class="journey-fragments-heading">A few thoughts from the start...</p>
+        <div class="journey-board-focus">
+          <p>How ready are we right now?</p>
+        </div>
+        <p class="journey-path-description">Three connections: verifying work leads to asking whether the temperature log is complete and seeking better visibility; assessing readiness leads to asking how prepared the store is and seeking one place to review readiness; recurring questions lead to asking about audit readiness and seeking operational confidence. The cleaning question is another recurring concern.</p>
+        <div class="journey-discovery-zones">
+          <section class="journey-discovery-zone journey-discovery-questions" aria-labelledby="discovery-questions">
+            <h3 id="discovery-questions">Questions Every Shift</h3>
+            <ul>
+              <li class="journey-path-one-question" data-kind="Question">Was the temperature log completed?</li>
+              <li class="journey-path-two-question" data-kind="Question">How prepared is the store today?</li>
+              <li class="journey-path-three-question journey-discovery-highlight" data-kind="Question">Are we ready for an audit?</li>
+              <li class="journey-path-extra" data-kind="Another shift question"><span>Another shift question</span>What cleaning still needs attention?</li>
+            </ul>
+          </section>
+          <section class="journey-discovery-zone journey-discovery-observations" aria-labelledby="discovery-problems">
+            <h3 id="discovery-problems">What We Noticed</h3>
+            <ul>
+              <li class="journey-path-one-observation" data-kind="Observation">Managers spend time verifying work that should already be visible.</li>
+              <li class="journey-path-two-observation" data-kind="Observation">Operational readiness is difficult to assess quickly.</li>
+              <li class="journey-path-three-observation" data-kind="Observation">The same questions come up throughout every shift.</li>
+            </ul>
+            <p class="journey-discovery-note">Always checking...</p>
+          </section>
+          <section class="journey-discovery-zone journey-discovery-opportunities" aria-labelledby="discovery-ideas">
+            <h3 id="discovery-ideas">Opportunities</h3>
+            <ul>
+              <li class="journey-path-one-opportunity" data-kind="Opportunity">Better visibility into completed work.</li>
+              <li class="journey-path-two-opportunity" data-kind="Opportunity">One place to review store readiness.</li>
+              <li class="journey-path-three-opportunity" data-kind="Opportunity">Provide greater operational confidence.</li>
+            </ul>
+          </section>
+        </div>
       </div>
+      <p class="journey-caption">Many sources. One busy shift.</p>
     </section>
 
-    <section class="lp-section lp-background" id="background">
-      <div class="lp-section-head"><p class="lp-kicker">01 / Project Background</p><h2>Built From Restaurant<br>Leadership Experience</h2></div>
+    <section class="lp-section lp-background journey-section" id="background" data-journey="observation">
+      <div class="journey-number" aria-hidden="true">02</div>
+      <div class="lp-section-head"><p class="lp-kicker">02 / The Observation</p><h2>Built From Restaurant<br>Leadership Experience</h2></div>
       <div class="lp-background-grid">
-        <div class="lp-pullquote"><span aria-hidden="true">“</span><p>Better access to information supports better attention to people and operations.</p><small>A guiding idea behind the project</small></div>
-        <div class="lp-prose"><p>Restaurant leadership involves balancing the needs of guests, teams, and daily operations while keeping up with administrative responsibilities. Important information can be spread across conversations, documents, and separate processes.</p><p>Shift Hero grew from observations of these everyday demands: the need for clear communication, accessible resources, and practical tools that support managers and supervisors as they develop their leadership skills.</p><p>The concept brings these responsibilities into a more organized environment without losing sight of the people doing the work.</p></div>
+        <div class="lp-pullquote"><span aria-hidden="true">&ldquo;</span><p>Better access to information supports better attention to people and operations.</p><small>A guiding idea behind the project</small></div>
+        <div class="lp-prose"><p>Restaurant leadership involves balancing the needs of guests, teams, and daily operations while keeping up with administrative responsibilities. Important information can be spread across conversations, documents, and separate processes.</p><p>Shift Hero grew from observations of these everyday demands: the need for clear communication, accessible resources, and practical tools that support managers and supervisors as they develop their leadership skills.</p><p>The question became how to bring that information together in a way that reflects the work of leading a restaurant.</p></div>
       </div>
     </section>
 
-    <section class="lp-section lp-platform" id="platform">
-      <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">02 / Platform Concept</p><h2>The Shift Hero Concept</h2></div><p>A practical framework for the information, responsibilities, and tools that support restaurant leadership.</p></div>
-      <div class="lp-pillars">
-        <article><span>01</span><h3>Leadership Workspace</h3><p>Provide supervisors and managers with a centralized operations hub.</p></article>
-        <article><span>02</span><h3>Communication &amp; Information</h3><p>Provide access to important operational content and communication resources.</p></article>
-        <article><span>03</span><h3>Administrative Controls</h3><p>Support management functions through organized administration tools.</p></article>
-        <article><span>04</span><h3>Supervisor Support</h3><p>Provide resources designed around restaurant leadership responsibilities.</p></article>
+    <section class="lp-section journey-section journey-idea" id="journey-idea" data-journey="idea">
+      <div class="journey-number" aria-hidden="true">03</div>
+      <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">03 / The Idea</p><h2>One Platform.<br>One Starting Point.<br>One Place To Lead.</h2></div><p>A manager-focused environment connecting operational resources, leadership guidance, content administration, and user management.</p></div>
+      <div class="journey-architecture" aria-label="Concept architecture: Shift Hero connects the leadership workspace, operational resources, communication, and administration">
+        <div class="journey-architecture-root">Shift Hero</div>
+        <div class="journey-architecture-branch"><div>Leadership Workspace</div><div>Operational Resources</div><div>Communication</div><div>Administration</div></div>
+      </div>
+      <p class="journey-caption">A conceptual framework for the platform</p>
+    </section>
+
+    <section class="lp-section journey-section journey-planning" id="development" data-journey="planning">
+      <div class="journey-number" aria-hidden="true">04</div>
+      <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">04 / Planning</p><h2>From Observation<br>to a Plan</h2></div><p>The concept took shape by considering the people, responsibilities, and decisions behind the work.</p></div>
+      <div class="journey-plans">
+        <details><summary><span>01</span> Identify Problems</summary><p>Begin with the demands of restaurant leadership: locating information, coordinating daily work, and keeping administrative responsibilities organized.</p></details>
+        <details><summary><span>02</span> Define Users</summary><p>Consider the different perspectives of supervisors, restaurant managers, and platform administrators, including the access each role needs.</p></details>
+        <details><summary><span>03</span> Plan Features</summary><p>Group the concept around operational work, leadership support, and administration instead of treating every tool as a separate destination.</p></details>
+        <details><summary><span>04</span> Design Experience</summary><p>Use a consistent visual language and clear paths so users can understand where they are and what to do next.</p></details>
       </div>
     </section>
 
-    <section class="lp-section lp-roles" aria-labelledby="lp-roles-title">
-      <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">Leadership perspectives</p><h2 id="lp-roles-title">Built for Different Leadership Roles</h2></div><p>Different responsibilities call for different views of the work. Available tools depend on the user's assigned permissions.</p></div>
-      <div class="lp-role-selector" role="tablist" aria-label="Leadership role perspectives">
-        <button type="button" role="tab" id="role-tab-supervisor" aria-controls="role-supervisor" aria-selected="true">Supervisor</button>
-        <button type="button" role="tab" id="role-tab-manager" aria-controls="role-manager" aria-selected="false" tabindex="-1">Restaurant Manager</button>
-        <button type="button" role="tab" id="role-tab-admin" aria-controls="role-admin" aria-selected="false" tabindex="-1">System Administrator</button>
-      </div>
-      <div class="lp-role-panel" role="tabpanel" id="role-supervisor" aria-labelledby="role-tab-supervisor" tabindex="0">
-        <div><p class="lp-kicker">Restaurant leadership / Supervisor</p><h3>Supporting the shift</h3><p class="lp-role-note">The prototype's Shift Manager demo illustrates this perspective.</p><dl class="lp-case-details"><dt>Responsibilities</dt><dd>Coordinate daily operations, walkthroughs, readiness, and action plans.</dd><dt>Primary Objectives</dt><dd>Keep priorities visible and support follow-through during a shift.</dd><dt>Key Platform Areas Used</dt><dd>Home dashboard, walkthroughs, readiness, and operational checklists.</dd></dl></div>
-        <figure><div class="lp-screen"><img src="landing-supervisor.png" loading="lazy" alt="Shift Hero home dashboard in the Shift Manager demo"></div><figcaption>Home dashboard / Shift Manager demo view</figcaption></figure>
-      </div>
-      <div class="lp-role-panel" role="tabpanel" id="role-manager" aria-labelledby="role-tab-manager" tabindex="0" hidden>
-        <div><p class="lp-kicker">Restaurant leadership / Manager</p><h3>Seeing the bigger picture</h3><dl class="lp-case-details"><dt>Responsibilities</dt><dd>Monitor restaurant performance, operational insights, scorecards, and team execution.</dd><dt>Primary Objectives</dt><dd>Review priorities and support consistent management follow-through.</dd><dt>Key Platform Areas Used</dt><dd>Home dashboard, action plans, operational insights, and scorecards.</dd></dl></div>
-        <figure><div class="lp-screen"><img src="landing-restaurant-manager.png" loading="lazy" alt="Shift Hero home dashboard in the Restaurant Manager demo"></div><figcaption>Home dashboard / Restaurant Manager demo view</figcaption></figure>
-      </div>
-      <div class="lp-role-panel" role="tabpanel" id="role-admin" aria-labelledby="role-tab-admin" tabindex="0" hidden>
-        <div><p class="lp-kicker">Platform administration / Administrator</p><h3>Keeping the platform organized</h3><dl class="lp-case-details"><dt>Responsibilities</dt><dd>Manage users, locations, roles, permissions, and dashboard content.</dd><dt>Primary Objectives</dt><dd>Maintain an organized platform and appropriate access to its tools.</dd><dt>Key Platform Areas Used</dt><dd>Administration portal, user management, role management, and content management.</dd></dl></div>
-        <figure><div class="lp-screen"><img src="landing-admin.png" loading="lazy" alt="Shift Hero administration portal in the system administrator demo"></div><figcaption>Administration portal / Demo environment</figcaption></figure>
-      </div>
-    </section>
-
-    <section class="lp-section lp-walkthrough" id="walkthrough">
-      <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">03 / Application Walkthrough</p><h2>Inside Shift Hero</h2></div><p>Explore the working interface through actual screens from the prototype. Application views are shown using demonstration data.</p></div>
-      <div class="lp-walkthrough-list">
-        <article class="lp-walk-row"><div class="lp-walk-copy"><p class="lp-kicker">01 / Entry</p><h3>Welcome to Shift Hero</h3><p>The existing sign-in experience provides an entry point to the platform and its leadership tools.</p><dl class="lp-case-details"><dt>Management Need</dt><dd>Users need a clear entry point to the tools available to them.</dd><dt>Design Decision</dt><dd>Place sign-in, help, password recovery, and demo access together.</dd><dt>Intended Outcome</dt><dd>Make the next step into the prototype easier to understand.</dd></dl></div><figure><div class="lp-screen"><img src="landing-login.png" loading="lazy" alt="Shift Hero login screen"></div><figcaption>Login / Prototype view</figcaption></figure></article>
-        <article class="lp-walk-row lp-walk-reverse"><div class="lp-walk-copy"><p class="lp-kicker">02 / Leadership Workspace</p><h3>A starting point for the day</h3><p>The home dashboard brings restaurant context, daily priorities, and available tools together in one place.</p><dl class="lp-case-details"><dt>Management Need</dt><dd>Daily priorities and restaurant context need to be visible during a busy shift.</dd><dt>Design Decision</dt><dd>Bring location, date, progress, and available tools into a central dashboard.</dd><dt>Intended Outcome</dt><dd>Help leaders orient themselves and identify what needs attention.</dd></dl></div><figure><div class="lp-screen"><img src="landing-dashboard.png" loading="lazy" alt="Shift Hero home dashboard with demonstration data"></div><figcaption>Home dashboard / Demo environment</figcaption></figure></article>
-        <article class="lp-walk-row"><div class="lp-walk-copy"><p class="lp-kicker">03 / Administration</p><h3>Management, organized</h3><p>The administration portal groups management functions into a structured workspace for authorized users.</p><dl class="lp-case-details"><dt>Management Need</dt><dd>Platform settings and administrative work require a clear home.</dd><dt>Design Decision</dt><dd>Group administrative functions in a dedicated portal for authorized users.</dd><dt>Intended Outcome</dt><dd>Make administrative tasks easier to find without crowding the daily workspace.</dd></dl></div><figure><div class="lp-screen"><img src="landing-admin.png" loading="lazy" alt="Shift Hero administration portal in the demo environment"></div><figcaption>Administration portal / Demo environment</figcaption></figure></article>
-        <article class="lp-walk-row lp-walk-reverse"><div class="lp-walk-copy"><p class="lp-kicker">04 / Access</p><h3>People and permissions</h3><p>User management organizes access around the application's leadership and restaurant hierarchy.</p><dl class="lp-case-details"><dt>Management Need</dt><dd>Users and access need to be organized across leadership levels and locations.</dd><dt>Design Decision</dt><dd>Present user management through an organizational hierarchy and permission controls.</dd><dt>Intended Outcome</dt><dd>Support clearer administration of people and their access.</dd></dl></div><figure><div class="lp-screen"><img src="landing-users.png" loading="lazy" alt="Shift Hero user management hierarchy in the demo environment"></div><figcaption>User management / Demo environment</figcaption></figure></article>
-        <article class="lp-walk-row"><div class="lp-walk-copy"><p class="lp-kicker">05 / Content</p><h3>Tools built around the work</h3><p>Content management supports the organization of shared walkthrough categories and items used in restaurant workflows.</p><dl class="lp-case-details"><dt>Management Need</dt><dd>Shared walkthrough content needs a consistent way to be maintained.</dd><dt>Design Decision</dt><dd>Organize editable walkthrough items into shared categories.</dd><dt>Intended Outcome</dt><dd>Help administrators keep operational content structured and accessible.</dd></dl></div><figure><div class="lp-screen"><img src="landing-content.png" loading="lazy" alt="Shift Hero walkthrough content management in the demo environment"></div><figcaption>Content management / Demo environment</figcaption></figure></article>
+    <section class="lp-section journey-section journey-build" id="journey-build" data-journey="build">
+      <div class="journey-number" aria-hidden="true">05</div>
+      <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">05 / The Build</p><h2>Building Shift Hero</h2></div><p>The most important changes were not simply visual. They came from asking better questions about what restaurant leaders need to know.</p></div>
+      <div class="journey-build-story">
+        <article class="journey-build-stage">
+          <div class="journey-build-copy"><p class="lp-kicker">A broad beginning</p><h3>The Original Vision</h3><p>Shift Hero originally began as a broad restaurant operations platform. The idea was to give managers access to planning tools, dashboards, checklists, resources, and operational programs from one central system.</p><p class="journey-build-note">Everything in one place?</p></div>
+          <figure><div class="lp-screen"><img src="build-original-vision.png" loading="lazy" alt="Early tablet-style Main Dashboard with restaurant planning and operational tools"></div><figcaption>Original operations dashboard / Early concept</figcaption></figure>
+        </article>
+        <article class="journey-build-reflection">
+          <div><p class="lp-kicker">Identifying what matters most</p><h3>A Change In Direction</h3><p>As the concept evolved, the question shifted from:</p><blockquote><p>&ldquo;What tools should managers have access to?&rdquo;</p><p>&ldquo;What do managers actually need to know right now?&rdquo;</p></blockquote></div>
+          <ol class="journey-build-flow" aria-label="The shift in thinking">
+            <li>Tools</li><li>Information</li><li>Visibility</li><li>Readiness</li>
+          </ol>
+        </article>
+        <article class="journey-build-stage journey-build-stage-reverse">
+          <div class="journey-build-copy"><p class="lp-kicker">A clearer view of the shift</p><h3>Operational Visibility</h3><p>The focus moved away from collecting tools and shifted toward understanding what actually needed attention during a shift. The platform began surfacing checklist completion, walkthrough status, temperature logs, open items, and store readiness.</p><p class="journey-build-note">This feels more useful.</p></div>
+          <figure><div class="lp-screen"><img src="build-operational-visibility.png" loading="lazy" alt="Earlier Shift Hero dashboard showing restaurant status, readiness, and today's priorities"></div><figcaption>Restaurant status and priorities / Earlier prototype</figcaption></figure>
+        </article>
+        <article class="journey-build-stage">
+          <div class="journey-build-copy"><p class="lp-kicker">Readiness &amp; accountability</p><h3>Building Around Readiness</h3><p>The project evolved toward helping restaurant leaders answer critical operational questions quickly:</p><ul><li>What still needs attention?</li><li>Are we audit ready?</li><li>What has been completed?</li><li>What should happen next?</li></ul><p>The interface became less about resources and more about operational confidence.</p><p class="journey-build-note">Can managers see what's happening at a glance?</p></div>
+          <figure><div class="lp-screen"><img src="build-readiness-progress.png" loading="lazy" alt="Earlier Today's Progress view showing checklist, walkthrough, and temperature log completion"></div><figcaption>Today's Progress / Earlier prototype view</figcaption></figure>
+        </article>
+        <article class="journey-build-conclusion"><p class="lp-kicker">The idea today</p><h3>Today's Shift Hero</h3><p>Today, Shift Hero is focused on leadership support, operational visibility, readiness, accountability, and helping managers navigate the responsibilities of day-to-day restaurant operations.</p><p class="journey-build-conclusion-line">More features &rarr; Better questions &rarr; Better visibility &rarr; Better leadership support</p></article>
       </div>
     </section>
 
-    <section class="lp-section lp-tour" aria-labelledby="lp-tour-title">
-      <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">A self-guided review</p><h2 id="lp-tour-title">Suggested Five-Minute Tour</h2></div><p>Use this checklist as a recommended path through the prototype. Check each step yourself; progress is kept only while this page remains open.</p></div>
-      <div class="lp-tour-layout">
-        <div class="lp-tour-intro"><h3>Start with the demo</h3><p>Enter the prototype and select <strong>Explore Demo Environment</strong>, then choose <strong>System Administrator</strong> to see the administration areas. Demo changes are discarded on exit or refresh.</p><a class="lp-button lp-button-red" href="#login" data-enter-app>Enter Prototype <span aria-hidden="true">&rarr;</span></a></div>
-        <ol class="lp-checklist">
-          <li><label><input type="checkbox"><span><strong>Explore the Leadership Workspace</strong><small>Start at the home dashboard and review the restaurant and date context.</small></span></label></li>
-          <li><label><input type="checkbox"><span><strong>Review Operational Resources</strong><small>Explore the available dashboard tools and walkthroughs.</small></span></label></li>
-          <li><label><input type="checkbox"><span><strong>Open the Administration Portal</strong><small>Use the Admin button in the System Administrator demo.</small></span></label></li>
-          <li><label><input type="checkbox"><span><strong>Visit User Management</strong><small>Explore the organizational hierarchy from the administration portal.</small></span></label></li>
-          <li><label><input type="checkbox"><span><strong>Return to Project Overview</strong><small>Exit the demo, then use Back to Project Overview on the login screen.</small></span></label></li>
-        </ol>
+    <section class="lp-section journey-section journey-iterate" id="journey-iterate" data-journey="iterate">
+      <div class="journey-number" aria-hidden="true">06</div>
+      <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">06 / Iteration</p><h2>Refining the Way<br>the Work Flows</h2></div><p>Each decision connects an operational challenge to a more intentional experience.</p></div>
+      <div class="journey-decisions">
+        <article><div><span>Challenge</span><h3>Navigation complexity</h3></div><span class="journey-arrow" aria-hidden="true">&rarr;</span><div><span>Response</span><h3>Simplified structure</h3><p>Group daily priorities and tools around a clear starting point.</p></div></article>
+        <article><div><span>Challenge</span><h3>Administrative workflows</h3></div><span class="journey-arrow" aria-hidden="true">&rarr;</span><div><span>Response</span><h3>Admin portal</h3><p>Give authorized users a dedicated place for platform management.</p></div></article>
+        <article><div><span>Challenge</span><h3>User management</h3></div><span class="journey-arrow" aria-hidden="true">&rarr;</span><div><span>Response</span><h3>Role-based access</h3><p>Organize users and permissions around responsibilities and locations.</p></div></article>
       </div>
     </section>
 
-    <section class="lp-section lp-boundaries" aria-labelledby="lp-boundaries-title">
-      <div class="lp-section-head"><p class="lp-kicker">Scope &amp; context</p><h2 id="lp-boundaries-title">Understanding The Prototype</h2></div>
-      <div class="lp-boundary-grid">
-        <div><h3>Included in this Prototype</h3><ul><li>Interactive interface</li><li>Administrative workflows</li><li>User management concept</li><li>Leadership resources</li><li>Demonstration environment</li></ul></div>
-        <div><h3>Not Included</h3><ul><li>Official Firehouse systems</li><li>Live restaurant data</li><li>Production deployment</li><li>Real-world integrations</li><li>Commercial release</li></ul></div>
+    <section class="lp-section journey-section journey-result" id="journey-result" data-journey="result">
+      <div class="journey-number" aria-hidden="true">07</div>
+      <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">07 / The Result</p><h2>Meet Shift Hero</h2></div><p>An interactive prototype that brings the concept into a working restaurant leadership environment.</p></div>
+      <figure class="journey-result-screen"><div class="lp-screen"><img src="journey-dashboard-current.png" loading="lazy" alt="Restaurant Command Center dashboard in the System Administrator demo"></div><figcaption>Home dashboard / System Administrator demo view</figcaption></figure>
+      <div class="journey-gallery" id="platform">
+        <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">Inside the platform</p><h2>A Closer Look</h2></div><p>Select an area to explore its purpose and see the working interface.</p></div>
+        <div class="journey-gallery-tabs" role="tablist" aria-label="Platform areas">
+          <button type="button" role="tab" id="gallery-tab-workspace" aria-controls="gallery-workspace" aria-selected="true">Leadership Workspace</button>
+          <button type="button" role="tab" id="gallery-tab-admin" aria-controls="gallery-admin" aria-selected="false" tabindex="-1">Administrative Controls</button>
+          <button type="button" role="tab" id="gallery-tab-users" aria-controls="gallery-users" aria-selected="false" tabindex="-1">User Management</button>
+          <button type="button" role="tab" id="gallery-tab-resources" aria-controls="gallery-resources" aria-selected="false" tabindex="-1">Operational Resources</button>
+        </div>
+        <div class="journey-gallery-panel" role="tabpanel" id="gallery-workspace" aria-labelledby="gallery-tab-workspace" tabindex="0"><div><p class="lp-kicker">Leadership Workspace</p><h3>A starting point for the day</h3><p>The dashboard brings restaurant context, daily priorities, and available tools together.</p><p><strong>Intended purpose:</strong> Help leaders orient themselves and focus on what needs attention.</p></div><figure><div class="lp-screen"><img src="journey-progress.png" loading="lazy" alt="Today's Progress showing checklists, walkthroughs, temperature logs, and daily completion in the Shift Manager demo"></div><figcaption>Today's Progress / Shift Manager demo</figcaption></figure></div>
+        <div class="journey-gallery-panel" role="tabpanel" id="gallery-admin" aria-labelledby="gallery-tab-admin" tabindex="0" hidden><div><p class="lp-kicker">Administrative Controls</p><h3>Management, organized</h3><p>The administration portal groups platform management functions in a dedicated workspace for authorized users.</p><p><strong>Intended purpose:</strong> Keep administrative work structured without crowding the daily workspace.</p></div><figure><div class="lp-screen"><img src="journey-admin-current.png" loading="lazy" alt="Administration portal in the System Administrator demo"></div><figcaption>Administration portal / Demo environment</figcaption></figure></div>
+        <div class="journey-gallery-panel" role="tabpanel" id="gallery-users" aria-labelledby="gallery-tab-users" tabindex="0" hidden><div><p class="lp-kicker">User Management</p><h3>People and permissions</h3><p>User management organizes access around the application's leadership and restaurant hierarchy.</p><p><strong>Intended purpose:</strong> Support clear administration of users, locations, and permissions.</p></div><figure><div class="lp-screen"><img src="journey-users-current.png" loading="lazy" alt="User management hierarchy in the System Administrator demo"></div><figcaption>User management / Demo environment</figcaption></figure></div>
+        <div class="journey-gallery-panel" role="tabpanel" id="gallery-resources" aria-labelledby="gallery-tab-resources" tabindex="0" hidden><div><p class="lp-kicker">Operational Resources</p><h3>Tools built around the work</h3><p>Shared walkthrough categories and items support consistent organization of operational content.</p><p><strong>Intended purpose:</strong> Help leaders access structured tools and administrators maintain shared content.</p></div><figure><div class="lp-screen"><img src="journey-content-current.png" loading="lazy" alt="Walkthrough content management in the System Administrator demo"></div><figcaption>Walkthrough content / Demo environment</figcaption></figure></div>
       </div>
+      <div class="journey-roles"><h3>Different perspectives, one environment</h3><p>Supervisors, restaurant managers, and system administrators work with different priorities. The tools shown depend on assigned access.</p><div class="journey-role-images"><figure><div class="lp-screen"><img src="journey-supervisor-tools.png" loading="lazy" alt="Tools and Administration groups available in the Shift Manager demo"></div><figcaption>Supervisor perspective / Shift Manager demo</figcaption></figure><figure><div class="lp-screen"><img src="journey-manager-tools.png" loading="lazy" alt="Tools and Administration groups available in the Restaurant Manager demo"></div><figcaption>Restaurant Manager perspective / Demo</figcaption></figure><figure><div class="lp-screen"><img src="journey-admin-tools.png" loading="lazy" alt="Tools and Administration groups available in the System Administrator demo"></div><figcaption>System Administrator perspective / Demo</figcaption></figure></div></div>
     </section>
 
-    <section class="lp-section lp-principles">
-      <div class="lp-section-head"><p class="lp-kicker">04 / Design Principles</p><h2>Designed Around<br>Restaurant Management</h2></div>
-      <div class="lp-principle-grid">
-        <article><span>01</span><h3>Focused</h3><p>Information organized around supervisory priorities.</p></article>
-        <article><span>02</span><h3>Structured</h3><p>Clear separation of responsibilities and functionality.</p></article>
-        <article><span>03</span><h3>Practical</h3><p>Inspired by real restaurant management workflows.</p></article>
-        <article><span>04</span><h3>Role-Based</h3><p>Different access levels for different management needs.</p></article>
-      </div>
+    <section class="lp-section journey-learned" aria-labelledby="journey-learned-title">
+      <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">Beyond the prototype</p><h2 id="journey-learned-title">What I Learned</h2></div><p>The project is an exercise in translating operational observations into a structured experience.</p></div>
+      <div class="journey-learned-grid"><article><h3>Leadership Thinking</h3><p>Design around the people responsible for guiding a shift.</p></article><article><h3>Restaurant Operations</h3><p>Connect digital tools to everyday restaurant routines.</p></article><article><h3>Product Design</h3><p>Turn an observed need into a coherent concept.</p></article><article><h3>User Experience</h3><p>Make information and next steps easier to find.</p></article><article><h3>Project Planning</h3><p>Move from priorities to a practical scope.</p></article><article><h3>Systems Organization</h3><p>Connect related tools in a structured environment.</p></article><article><h3>Business Analysis</h3><p>Consider how responsibilities shape platform needs.</p></article><article><h3>Organizational Design</h3><p>Reflect different roles, locations, and access levels.</p></article></div>
     </section>
 
-    <section class="lp-section lp-development" id="development">
-      <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">05 / Development Journey</p><h2>From Observation<br>to Prototype</h2></div><p>A concept shaped by restaurant experience and developed into an interactive environment.</p></div>
-      <ol class="lp-timeline lp-journey">
-        <li><span>01</span><h3>Observation</h3><dl><dt>Objective</dt><dd>Identify restaurant leadership challenges.</dd><dt>Key Decisions</dt><dd>Focus on day-to-day management responsibilities.</dd><dt>Lessons Learned</dt><dd>Information needs to be accessible during active operations.</dd></dl></li>
-        <li><span>02</span><h3>Planning</h3><dl><dt>Objective</dt><dd>Organize the concept around management workflows.</dd><dt>Key Decisions</dt><dd>Separate daily work from administration.</dd><dt>Lessons Learned</dt><dd>Clear responsibilities help establish useful priorities.</dd></dl></li>
-        <li><span>03</span><h3>Design</h3><dl><dt>Objective</dt><dd>Develop the interface and user experience.</dd><dt>Key Decisions</dt><dd>Use consistent navigation and role-based structure.</dd><dt>Lessons Learned</dt><dd>Hierarchy and context help people find their next step.</dd></dl></li>
-        <li><span>04</span><h3>Development</h3><dl><dt>Objective</dt><dd>Build a working prototype and supporting tools.</dd><dt>Key Decisions</dt><dd>Bring leadership workflows and administration into one environment.</dd><dt>Lessons Learned</dt><dd>Interactive workflows expose details that static concepts cannot.</dd></dl></li>
-        <li><span>05</span><h3>Iteration</h3><dl><dt>Objective</dt><dd>Refine the prototype and its presentation.</dd><dt>Key Decisions</dt><dd>Improve navigation, clarity, and the guided experience.</dd><dt>Lessons Learned</dt><dd>Small workflow refinements can make complex tools easier to explore.</dd></dl></li>
-      </ol>
+    <section class="lp-section journey-boundary">
+      <div><p class="lp-kicker">Project context</p><h2>Understanding the Prototype</h2></div>
+      <div><p>Shift Hero is an independent project and is not an official Firehouse Subs product or corporate initiative. This project was developed for educational, professional development, and portfolio purposes.</p><p>It is an interactive concept with a demonstration environment, not a production deployment or an integration with official Firehouse systems or live restaurant data.</p></div>
     </section>
-
-    <section class="lp-section lp-evolution" aria-labelledby="lp-evolution-title">
-      <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">Project milestones</p><h2 id="lp-evolution-title">Project Evolution</h2></div><p>A view of the concept's development from its initial direction to the current iteration.</p></div>
-      <ol class="lp-milestones">
-        <li><span>01</span><div><h3>Initial Project Concept</h3><p>Framing restaurant leadership and operational support.</p></div></li>
-        <li><span>02</span><div><h3>Leadership Workspace Development</h3><p>Bringing day-to-day context and tools together.</p></div></li>
-        <li><span>03</span><div><h3>Administrative Portal Creation</h3><p>Organizing platform administration in a dedicated area.</p></div></li>
-        <li><span>04</span><div><h3>User Management System</h3><p>Structuring users, locations, and access.</p></div></li>
-        <li><span>05</span><div><h3>Demo Environment Creation</h3><p>Providing an isolated way to explore different roles.</p></div></li>
-        <li><span>06</span><div><h3>Landing Page Development</h3><p>Presenting the concept and its working interface.</p></div></li>
-        <li><span>07</span><div><h3>Current Iteration</h3><p>Adding case-study context and a guided review path.</p></div></li>
-      </ol>
-    </section>
-
-    <section class="lp-section lp-status">
-      <div><p class="lp-kicker">06 / Project Status</p><h2>Current Status</h2></div>
-      <div class="lp-status-detail"><div class="lp-status-tags"><span>Independent Project</span><span>Interactive Prototype</span><span>Ongoing Development</span></div><p>Shift Hero is an independent project and is not an official Firehouse Subs product or corporate initiative. This project was developed for educational, professional development, and portfolio purposes.</p></div>
-    </section>
-    <section class="lp-section lp-considerations" aria-labelledby="lp-considerations-title">
-      <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">Approach</p><h2 id="lp-considerations-title">Design Considerations</h2></div><p>Principles guiding the prototype's interface and ongoing refinement.</p></div>
-      <div class="lp-consideration-grid">
-        <article><h3>Accessibility</h3><p>Clear labels, keyboard navigation, and visible focus are part of the design approach.</p></article>
-        <article><h3>Responsive Design</h3><p>Layouts adapt across desktop and smaller screens.</p></article>
-        <article><h3>Consistent Navigation</h3><p>Familiar paths help users move between related areas.</p></article>
-        <article><h3>Role-Based Structure</h3><p>Access and available tools reflect different responsibilities.</p></article>
-        <article><h3>Information Organization</h3><p>Content is grouped around tasks and management context.</p></article>
-      </div>
-    </section>
-    <section class="lp-section lp-demonstrates" aria-labelledby="lp-demonstrates-title">
-      <div class="lp-section-head lp-head-split"><div><p class="lp-kicker">Transferable skills</p><h2 id="lp-demonstrates-title">What This Project Demonstrates</h2></div><p>A practical exercise in connecting restaurant leadership experience with structured digital problem-solving.</p></div>
-      <div class="lp-demonstrates-grid">
-        <article><span>01</span><h3>Restaurant Operations Understanding</h3></article>
-        <article><span>02</span><h3>Leadership Development</h3></article>
-        <article><span>03</span><h3>Product Thinking</h3></article>
-        <article><span>04</span><h3>User Experience Design</h3></article>
-        <article><span>05</span><h3>Project Planning</h3></article>
-        <article><span>06</span><h3>Technical Implementation</h3></article>
-        <article><span>07</span><h3>Administrative Workflow Design</h3></article>
-      </div>
-    </section>
-    <section class="lp-final">
-      <div><p class="lp-kicker">Continue to the platform</p><h2>Explore The Prototype</h2><p>Continue into the Shift Hero environment to explore the platform concept and application functionality.</p></div>
+    <section class="lp-final journey-explore" id="journey-explore" data-journey="explore">
+      <div><p class="lp-kicker">08 / Explore</p><h2>You've Seen The Journey.<br>Now Explore The Result.</h2><p>Continue into the Shift Hero environment to explore the platform concept and application functionality.</p></div>
       <a class="lp-button lp-button-light" href="#login" data-enter-app>Enter Shift Hero <span aria-hidden="true">&rarr;</span></a>
     </section>
   </main>
