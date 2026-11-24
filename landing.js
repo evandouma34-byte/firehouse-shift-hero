@@ -64,6 +64,30 @@
   const journeySections = journeyLinks.map(link => document.getElementById(link.getAttribute('href').slice(1)));
   const fragments = landing.querySelector('.journey-fragments');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const discoveryToggles = [...fragments.querySelectorAll('.journey-note-toggle')];
+  discoveryToggles.forEach(toggle => {
+    const note = toggle.closest('li');
+    const details = document.getElementById(toggle.getAttribute('aria-controls'));
+    note.addEventListener('click', event => {
+      if (!toggle.contains(event.target) && !details.contains(event.target)) toggle.click();
+    });
+    toggle.addEventListener('click', () => {
+      const opening = toggle.getAttribute('aria-expanded') === 'false';
+      discoveryToggles.forEach(item => {
+        const expanded = item === toggle && opening;
+        const details = document.getElementById(item.getAttribute('aria-controls'));
+        item.setAttribute('aria-expanded', String(expanded));
+        details.setAttribute('aria-hidden', String(!expanded));
+        details.inert = !expanded;
+      });
+      scheduleJourneyUpdate();
+    });
+  });
+  fragments.addEventListener('transitionend', event => {
+    if (event.target.classList.contains('journey-note-details') && event.propertyName === 'grid-template-rows') {
+      scheduleJourneyUpdate();
+    }
+  });
   let trackingScheduled = false;
   let previousActive = -1;
   function updateJourney() {
