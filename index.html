@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="landing.css"><link rel="stylesheet" href="journey.css"></head><body class="landing-active">
 <div id="landing">
   <div class="lp-nav" role="banner">
-    <a class="lp-brand" href="#project-overview" aria-label="Firehouse Subs and Shift Hero project overview"><img src="firehouse-subs-logo.png" alt="Firehouse Subs"><span class="lp-brand-divider" aria-hidden="true">&times;</span><span class="lp-brand-name" aria-hidden="true">Shift Hero</span></a>
+    <a class="lp-brand" href="#project-overview" aria-label="Firehouse Subs and Shift Hero project overview"><span class="lp-brand-emblem"><img src="firehouse-subs-emblem.png" alt=""></span></a>
     <nav class="lp-nav-links" aria-label="Project navigation">
       <a href="#project-overview">Project Overview</a><a href="#platform">Platform</a><a href="#development">Development</a>
     </nav>
@@ -25,17 +25,18 @@
   </nav>
   <main class="lp-main">
     <section class="lp-hero" id="project-overview">
+      <div class="lp-hero-brand" aria-label="Firehouse Subs and Shift Hero">
+        <img class="lp-hero-brand-logo" src="firehouse-subs-logo.png" alt="">
+        <span class="lp-hero-brand-divider" aria-hidden="true">X</span>
+        <span class="lp-hero-brand-name" aria-hidden="true">Shift Hero</span>
+        <img class="lp-hero-brand-flame" src="hero-brand-flame.svg" alt="">
+      </div>
       <div class="lp-hero-copy">
         <p class="lp-eyebrow"><span>Project Concept</span> Restaurant Operations &amp; Leadership</p>
         <h1 tabindex="-1">A Better Way to Support <span>Restaurant Leadership</span></h1>
         <p class="lp-hero-intro">Shift Hero is an independent project exploring how digital tools can help restaurant supervisors and managers organize information, support leadership responsibilities, and improve day-to-day operational management.</p>
-        <div class="lp-actions"><a class="lp-button lp-button-red" href="#login" data-enter-app>Enter Prototype <span aria-hidden="true">&rarr;</span></a><a class="lp-text-link journey-scroll-link" href="#journey-problem">Scroll to Explore the Journey <span aria-hidden="true">&darr;</span></a></div>
+        <div class="lp-actions"><a class="lp-button lp-button-light" href="#login" data-enter-app>Enter Prototype <span aria-hidden="true">&rarr;</span></a><a class="lp-text-link journey-scroll-link" href="#journey-problem">Scroll to Explore the Journey <span aria-hidden="true">&darr;</span></a></div>
         <p class="lp-hero-note">An independent restaurant leadership and operations platform concept built within the Firehouse Subs environment.</p>
-      </div>
-      <div class="lp-hero-visual">
-        <div class="lp-visual-label"><span>Shift Hero</span><span>Platform Concept / 01</span></div>
-        <div class="lp-screen lp-hero-screen"><img src="journey-dashboard-current.png" alt="Restaurant Command Center dashboard in the System Administrator demo"></div>
-        <p class="lp-image-caption">A look inside the working prototype <span>Demo environment</span></p>
       </div>
     </section>
 
@@ -45,9 +46,6 @@
       <p class="journey-realization">There has to be a better way.<svg viewBox="0 0 300 16" preserveAspectRatio="none" aria-hidden="true"><path d="M3 11 C65 5 154 12 296 5 M13 14 C103 8 202 12 286 8"/></svg></p>
       <div class="journey-fragments" aria-label="Early product discovery: shift questions, observations, and opportunities">
         <p class="journey-fragments-heading">A few thoughts from the start...</p>
-        <div class="journey-board-focus">
-          <p>How ready are we right now?</p>
-        </div>
         <p class="journey-path-description">Three connections: verifying work leads to asking whether the temperature log is complete and seeking better visibility; assessing readiness leads to asking how prepared the store is and seeking one place to review readiness; recurring questions lead to asking about audit readiness and seeking operational confidence. The cleaning question is another recurring concern.</p>
         <div class="journey-discovery-zones">
           <section class="journey-discovery-zone journey-discovery-questions" aria-labelledby="discovery-questions">
@@ -77,6 +75,9 @@
             </ul>
           </section>
           <p id="discovery-note-instructions" class="journey-note-instructions">Select a note to explore the thinking behind it.<svg viewBox="0 0 300 16" preserveAspectRatio="none" aria-hidden="true"><path d="M3 11 C65 5 154 12 296 5 M13 14 C103 8 202 12 286 8"/></svg></p>
+        </div>
+        <div class="journey-board-focus">
+          <p>How ready are we right now?</p>
         </div>
       </div>
       <p class="journey-caption">Many sources. One busy shift.</p>
