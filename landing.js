@@ -35,35 +35,59 @@
     });
   });
 
-  const galleryTabs = [...landing.querySelectorAll('.journey-gallery-tabs [role="tab"]')];
-  function selectGallery(tab) {
-    galleryTabs.forEach(item => {
-      const selected = item === tab;
-      item.setAttribute('aria-selected', String(selected));
-      item.tabIndex = selected ? 0 : -1;
-      document.getElementById(item.getAttribute('aria-controls')).hidden = !selected;
+  function setupTabs(tablist) {
+    const tabs = [...tablist.querySelectorAll('[role="tab"]')];
+    function selectTab(tab) {
+      tabs.forEach(item => {
+        const selected = item === tab;
+        item.setAttribute('aria-selected', String(selected));
+        item.tabIndex = selected ? 0 : -1;
+        document.getElementById(item.getAttribute('aria-controls')).hidden = !selected;
+      });
+    }
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => selectTab(tab));
+      tab.addEventListener('keydown', event => {
+        let next;
+        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (index + 1) % tabs.length;
+        else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (index + tabs.length - 1) % tabs.length;
+        else if (event.key === 'Home') next = 0;
+        else if (event.key === 'End') next = tabs.length - 1;
+        else return;
+        event.preventDefault();
+        selectTab(tabs[next]);
+        tabs[next].focus();
+      });
     });
   }
-  galleryTabs.forEach((tab, index) => {
-    tab.addEventListener('click', () => selectGallery(tab));
-    tab.addEventListener('keydown', event => {
-      let next;
-      if (event.key === 'ArrowRight') next = (index + 1) % galleryTabs.length;
-      else if (event.key === 'ArrowLeft') next = (index + galleryTabs.length - 1) % galleryTabs.length;
-      else if (event.key === 'Home') next = 0;
-      else if (event.key === 'End') next = galleryTabs.length - 1;
-      else return;
-      event.preventDefault();
-      selectGallery(galleryTabs[next]);
-      galleryTabs[next].focus();
-    });
-  });
+  setupTabs(landing.querySelector('.journey-evolution-tabs'));
+  setupTabs(landing.querySelector('.journey-product-tabs'));
+  const perspectiveTabs = landing.querySelector('.journey-perspective-tabs');
+  setupTabs(perspectiveTabs);
+  const updatePerspectiveTabOrientation = () => {
+    perspectiveTabs.setAttribute('aria-orientation', window.matchMedia('(max-width: 600px)').matches ? 'horizontal' : 'vertical');
+  };
+  updatePerspectiveTabOrientation();
+  window.addEventListener('resize', updatePerspectiveTabOrientation);
 
   const tracker = landing.querySelector('.journey-tracker');
   const journeyLinks = [...tracker.querySelectorAll('[data-stage]')];
   const journeySections = journeyLinks.map(link => document.getElementById(link.getAttribute('href').slice(1)));
   const fragments = landing.querySelector('.journey-fragments');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const productReveal = landing.querySelector('#journey-iterate');
+  if (!reducedMotion.matches && 'IntersectionObserver' in window) {
+    productReveal.classList.add('journey-reveal-enabled');
+    const revealObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          productReveal.classList.add('journey-revealed');
+          revealObserver.unobserve(productReveal);
+        }
+      });
+    }, { threshold: 0.12 });
+    revealObserver.observe(productReveal);
+  }
   const discoveryToggles = [...fragments.querySelectorAll('.journey-note-toggle')];
   discoveryToggles.forEach(toggle => {
     const note = toggle.closest('li');
